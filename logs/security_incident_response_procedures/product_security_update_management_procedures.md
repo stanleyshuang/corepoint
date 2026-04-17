@@ -156,77 +156,172 @@ flowchart TD
 
 ### 5.2 流程步驟 Process Steps
 
-當產品安全開發流程【產品安全發行】階段完成後，若有需發佈更新程式（e.g. 修補漏洞，新增功能等等）之需求出現時，更新程式需求方填寫《438_產品安全_更新申請書》，提交 PSIRT 啟動本程序。
+當產品安全開發流程【產品安全發行】階段完成後，若有需發佈更新程式（e.g. 修補漏洞，新增功能等等）之需求出現時，更新程式需求方填寫《438_產品安全_更新申請書》，提交 PSIRT 啟動本程序。  
+When the product security development process, 【Product Security Release】 stage is completed, if there is a need to release updates (e.g. patches, new functions, etc.), the update program requester fills in the “438_Product Security_Update Request Form” and submits it to PSIRT to activate this process.
 
 #### A. 提出更新需求 Submitting Update Requests
-- **角色：** PSIRT
-- **輸入：** 更新程式需求方提出的需求
-- **輸出：** 《438_產品安全_更新申請書》、《418_產品安全_作業與審查申請書》
-- **參考：** 章節 6.1
+
+- **角色 Role：** PSIRT  
+- **輸入 Input：** 更新程式需求方提出的需求 Requirements submitted by the demand-side of the update program  
+- **輸出 Output：**  
+  《438_產品安全_更新申請書_Product Security_Update Request Form》  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+- **參考 Reference：** 章節 Chapter 6.1  
+
+如有發佈更新程式之需求時，由 PSIRT 依據更新程式需求方提出的需求填寫《438_產品安全_更新申請書》與《418_產品安全_作業與審查申請書》，完成後，通知 RD Leader，進到下一步驟【更新需求審查】。本步驟之相關規範，請參考章節 6.1。  
+If there is a need to release the update, PSIRT will fill out the “438_Product Security_Update Request Form” and “418_Product Security_Operations and Review Application Form” according to the requirements raised by the requester. After completion, notify RD Leader and proceed to the next step, [Update Requirements Review]. Please refer to chapter 6.1 for the regulations of this step.
 
 #### B. 更新需求審查 Update Requirements Review
-- **角色：** PSIRT、RD Leader
-- **輸入：** 《438_產品安全_更新申請書》、《418_產品安全_作業與審查申請書》
-- **輸出：** 《418_產品安全_作業與審查申請書》
-- **參考：** 章節 6.2
-- **簽核：** RD Leader
+
+- **角色 Role：** PSIRT、RD Leader  
+- **輸入 Input：**  
+  《438_產品安全_更新申請書_Product Security_Update Request Form》  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+- **輸出 Output：**  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+- **參考 Reference：** 章節 Chapter 6.2  
+- **簽核 Approver：** RD Leader  
+
+RD Leader 依照 PSIRT 提供的《438_產品安全_更新申請書》內容，進行安全更新需求審查，確認產品更新原因，判定是否需要更新，將原因記錄於《439_產品安全_更新規格書》，直接簽核。簽核完成後，若判定結果不需更新，則直接回覆 PSIRT，本流程結束。若判定需要更新，則進到下一步驟【更新程式規劃】。本步驟之相關規範，請參考章節 6.2。  
+RD Leader conducts a security update requirement review according to the content of the “438_Product Security_Update Request Form” provided by PSIRT, confirms the reason for product update, determines whether an update is required, and records the reason in “439_Product Security_Update Specifications” for approval. If the determination result is that no update is required, reply directly to PSIRT and this process ends. If an update is required, proceed to the next step, [Update Program Planning]. Please refer to chapter 6.2 for the regulations of this step.
 
 #### C. 更新程式規劃 Update Program Planning
-- **角色：** RD Leader
-- **輸入：** 《438_產品安全_更新申請書》
-- **輸出：** 《439_產品安全_更新規格書》
-- **參考：** 章節 6.2
+
+- **角色 Role：** RD Leader  
+- **輸入 Input：**  
+  《438_產品安全_更新申請書_Product Security_Update Request Form》  
+- **輸出 Output：**  
+  《439_產品安全_更新規格書_Product Security_Update Specifications》  
+- **參考 Reference：** 章節 Chapter 6.2  
+
+RD Leader 依據《438_產品安全_更新申請書》，訂定預計修改範圍、實作方式、規格與更新時程，並記錄於《439_產品安全_更新規格書》。完成後，通知 RD 進到下一步驟【更新程式實作】與【更新程式文件撰寫】。本步驟之相關規範，請參考章節 6.2。  
+RD Leader, based on the “438_Product Security_Update Request Form,” defines the planned modification scope, implementation method, specifications, and update schedule, and records them in “439_Product Security_Update Specifications.” After completion, notify RD to proceed to the next steps, [Update Program Implementation] and [Update Program Documents Writing]. Please refer to chapter 6.2 for the regulations of this step.
 
 #### D. 更新程式實作 Update Program Implementation
-- **角色：** RD Leader、RD
-- **輸入：** 《439_產品安全_更新規格書》
-- **輸出：** 《419_產品安全_會議紀錄》
-- **參考：** 章節 6.3
+
+- **角色 Role：** RD Leader、RD  
+- **輸入 Input：**  
+  《439_產品安全_更新規格書_Product Security_Update Specifications》  
+- **輸出 Output：**  
+  《419_產品安全_會議紀錄_Product Security_Meeting Minutes》  
+- **參考 Reference：** 章節 Chapter 6.3  
+
+RD Leader 於開發週會中與 RD 依據《439_產品安全_更新規格書》所記載之更新程式實作方式與規格進行開發討論，決定更新相關開發及單元測試執行之方式與檢視之機制，並指派 RD 進行安全修補程式開發。決議內容須記錄於《419_產品安全_會議紀錄》，作為後續執行之依據。RD 依循會議記錄之內容進行安全修補程式開發，並進到下一步驟【更新程式驗證】。本步驟之相關規範，請參考章節 6.3。  
+During the development weekly meeting, RD Leader discusses with RD the implementation approach and specifications of the update based on “439_Product Security_Update Specifications,” determines how update-related development and unit testing will be carried out and reviewed, and assigns RD to develop the security patch. The resolutions shall be recorded in “419_Product Security_Meeting Minutes” as the basis for subsequent execution. RD then develops the security patch according to the meeting minutes and proceeds to the next step, [Update Requirements Verification]. Please refer to chapter 6.3 for the regulations of this step.
 
 #### E. 更新程式驗證 Update Requirements Verification
-- **角色：** QT
-- **輸入：** 《438_產品安全_更新申請書》、《439_產品安全_更新規格書》
-- **輸出：** 《424_產品安全_實作測試計畫表》、《425_產品安全_實作測試報告》、《418_產品安全_作業與審查申請書》
-- **參考：** 章節 6.4
+
+- **角色 Role：** QT  
+- **輸入 Input：**  
+  《438_產品安全_更新申請書_Product Security_Update Request Form》  
+  《439_產品安全_更新規格書_Product Security_Update Specifications》  
+- **輸出 Output：**  
+  《424_產品安全_實作測試計畫表_Product Security_Implementation Test Plan Form》  
+  《425_產品安全_實作測試報告_Product Security_Implementation Test Report》  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+- **參考 Reference：** 章節 Chapter 6.4  
+
+QT 依照《438_產品安全_更新申請書》、《439_產品安全_更新規格書》撰寫《424_產品安全_實作測試計畫表》並進行測試，測試結果須記錄於《425_產品安全_實作測試報告》。完成後，填寫《418_產品安全_作業與審查申請書》提交審查，並通知 QT Leader 進到下一步驟【驗證結果審查】。本步驟之規範，請參考章節 6.4。  
+QT prepares the “424_Product Security_Implementation Test Plan Form” and performs testing according to the “438_Product Security_Update Request Form” and “439_Product Security_Update Specifications.” The test results shall be recorded in the “425_Product Security_Implementation Test Report.” After completion, fill in the “418_Product Security_Operations and Review Application Form” and submit it for review, then notify QT Leader to proceed to the next step, [Verification Result Review]. Please refer to chapter 6.4 for the regulations of this step.
 
 #### F. 驗證結果審查 Verification Result Review
-- **角色：** QT、QT Leader
-- **輸入：** 《418_產品安全_作業與審查申請書》、《424_產品安全_實作測試計畫表》、《425_產品安全_實作測試報告》
-- **輸出：** 《418_產品安全_作業與審查申請書》
-- **參考：** 章節 6.5
-- **簽核：** QT Leader
+
+- **角色 Role：** QT、QT Leader  
+- **輸入 Input：**  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+  《424_產品安全_實作測試計畫表_Product Security_Implementation Test Plan Form》  
+  《425_產品安全_實作測試報告_Product Security_Implementation Test Report》  
+- **輸出 Output：**  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+- **參考 Reference：** 章節 Chapter 6.5  
+- **簽核 Approver：** QT Leader  
+
+QT Leader 審查 QT 提交的《424_產品安全_實作測試計畫表》與《425_產品安全_實作測試報告》。若發現缺漏、錯誤與需處理之安全功能缺陷，則退回相對應步驟處理，重新提交審查；完成後直接簽核，通知 PSIRT，進到下一步驟【更新程式整合】。本步驟之規範，請參考章節 6.5。  
+QT Leader reviews the “424_Product Security_Implementation Test Plan Form” and “425_Product Security_Implementation Test Report” submitted by QT. If omissions, errors, or security function defects requiring handling are found, return to the corresponding step for correction and resubmission. After completion, approve directly, notify PSIRT, and proceed to the next step, [Update Program Integration]. Please refer to chapter 6.5 for the regulations of this step.
 
 #### G. 更新程式文件撰寫 Update Program Documents Writing
-- **角色：** RD
-- **輸入：** 《438_產品安全_更新申請書》、《439_產品安全_更新規格書》
-- **輸出：** 《418_產品安全_作業與審查申請書》、《416_產品安全_事件解決方案公告》
-- **參考：** 章節 6.6
+
+- **角色 Role：** RD  
+- **輸入 Input：**  
+  《438_產品安全_更新申請書_Product Security_Update Request Form》  
+  《439_產品安全_更新規格書_Product Security_Update Specifications》  
+- **輸出 Output：**  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+  《416_產品安全_事件解決方案公告_Product Security_Incident Resolution Announcement》  
+- **參考 Reference：** 章節 Chapter 6.6  
+
+RD 依據《438_產品安全_更新申請書》與《439_產品安全_更新規格書》所記載之更新程式實作方式、規格、開發期程，撰寫《416_產品安全_事件解決方案公告》。完成後，填寫《418_產品安全_作業與審查申請書》提交審查，通知 RD Leader 進到下一步驟【更新程式文件審查】。本步驟之規範，請參考章節 6.6。  
+RD writes the “416_Product Security_Incident Resolution Announcement” according to the implementation method, specifications, and development schedule recorded in the “438_Product Security_Update Request Form” and “439_Product Security_Update Specifications.” After completion, fill in the “418_Product Security_Operations and Review Application Form” and submit it for review, then notify RD Leader to proceed to the next step, [Update Program Documents Review]. Please refer to chapter 6.6 for the regulations of this step.
 
 #### H. 更新程式文件審查 Update Program Documents Review
-- **角色：** RD、RD Leader
-- **輸入：** 《418_產品安全_作業與審查申請書》、《416_產品安全_事件解決方案公告》、《438_產品安全_更新申請書》、《439_產品安全_更新規格書》
-- **輸出：** 《418_產品安全_作業與審查申請書》
-- **參考：** 章節 6.7
-- **簽核：** RD Leader
+
+- **角色 Role：** RD、RD Leader  
+- **輸入 Input：**  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+  《416_產品安全_事件解決方案公告_Product Security_Incident Resolution Announcement》  
+  《438_產品安全_更新申請書_Product Security_Update Request Form》  
+  《439_產品安全_更新規格書_Product Security_Update Specifications》  
+- **輸出 Output：**  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+- **參考 Reference：** 章節 Chapter 6.7  
+- **簽核 Approver：** RD Leader  
+
+RD Leader 依據《438_產品安全_更新申請書》與《439_產品安全_更新規格書》審查 RD 提交的《416_產品安全_事件解決方案公告》。若發現缺漏或錯誤，則退回相對應步驟處理，重新提交審查；完成後直接簽核。通知 PSIRT，進到下一步驟【更新程式整合】。本步驟之規範，請參考章節 6.7。  
+RD Leader reviews the “416_Product Security_Incident Resolution Announcement” submitted by RD according to the “438_Product Security_Update Request Form” and “439_Product Security_Update Specifications.” If omissions or errors are found, return to the corresponding step for correction and resubmission. After completion, approve directly, notify PSIRT, and proceed to the next step, [Update Program Integration]. Please refer to chapter 6.7 for the regulations of this step.
 
 #### I. 更新程式整合 Update Program Integration
-- **角色：** PSIRT
-- **輸入：** 《425_產品安全_實作測試報告》、《416_產品安全_事件解決方案公告》、《438_產品安全_更新申請書》、《439_產品安全_更新規格書》
-- **輸出：** 《436_產品安全_更新檢核表》、《418_產品安全_作業與審查申請書》
+
+- **角色 Role：** PSIRT  
+- **輸入 Input：**  
+  《425_產品安全_實作測試報告_Product Security_Implementation Test Report》  
+  《416_產品安全_事件解決方案公告_Product Security_Incident Resolution Announcement》  
+  《438_產品安全_更新申請書_Product Security_Update Request Form》  
+  《439_產品安全_更新規格書_Product Security_Update Specifications》  
+- **輸出 Output：**  
+  《436_產品安全_更新檢核表_Product Security_Update Checklist》  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+- **參考 Reference：** 無 None.  
+
+PSIRT 依據《436_產品安全_更新檢核表》，確認《425_產品安全_實作測試報告》與《416_產品安全_事件解決方案公告》的內容是否有缺漏及錯誤。確認無誤後，填寫《418_產品安全_作業與審查申請書》進到下一步驟【更新程式發行審查】。  
+PSIRT checks the contents of the “425_Product Security_Implementation Test Report” and the “416_Product Security_Incident Resolution Announcement” according to the “436_Product Security_Update Checklist” to confirm there are no omissions or errors. After confirmation, fill in the “418_Product Security_Operations and Review Application Form” and proceed to the next step, [Update Program Release Review].
 
 #### J. 更新程式發行審查 Update Program Release Review
-- **角色：** PSIRT、RevG
-- **輸入：** 《418_產品安全_作業與審查申請書》、《436_產品安全_更新檢核表》、《425_產品安全_實作測試報告》、《416_產品安全_事件解決方案公告》、《438_產品安全_更新申請書》、《439_產品安全_更新規格書》
-- **輸出：** 《419_產品安全_會議紀錄》、《418_產品安全_作業與審查申請書》
-- **簽核：** PCC Leader
+
+- **角色 Role：** PSIRT、RevG  
+- **輸入 Input：**  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+  《436_產品安全_更新檢核表_Product Security_Update Checklist》  
+  《425_產品安全_實作測試報告_Product Security_Implementation Test Report》  
+  《416_產品安全_事件解決方案公告_Product Security_Incident Resolution Announcement》  
+  《438_產品安全_更新申請書_Product Security_Update Request Form》  
+  《439_產品安全_更新規格書_Product Security_Update Specifications》  
+- **輸出 Output：**  
+  《419_產品安全_會議紀錄_Product Security_Meeting Minutes》  
+  《418_產品安全_作業與審查申請書_Product Security_Operations and Review Application Form》  
+- **參考 Reference：** 無 None.  
+- **簽核 Approver：** PCC Leader  
+
+PSIRT 召集 RevG 相關人員進行產品安全更新程式發行審查會議，針對《436_產品安全_更新檢核表》、《416_產品安全_事件解決方案公告》、《425_產品安全_實作測試報告》，確認所有檢核表項目皆已處理完畢，審核結果記錄於《419_產品安全_會議紀錄》中。若未通過審查，則依決議意見通知改善對象，待完成改善後，重新提交審查。通過審查後，提交 PCC Leader 簽核，完成後進到下一步驟【安全更新交付】。  
+PSIRT convenes relevant RevG members to conduct the product security update release review meeting. Based on the “436_Product Security_Update Checklist,” “416_Product Security_Incident Resolution Announcement,” and “425_Product Security_Implementation Test Report,” the meeting confirms that all checklist items have been completed, and the review results are recorded in the “419_Product Security_Meeting Minutes.” If the review is not passed, the improvement target shall be notified according to the meeting resolution, and the materials shall be resubmitted after improvement. After passing the review, submit to PCC Leader for approval and then proceed to the next step, [Security Update Delivery].
 
 #### K. 安全更新交付 Security Update Delivery
-- **角色：** PSIRT
-- **輸入：** 《416_產品安全_事件解決方案公告》
-- **參考：** 章節 6.8、《308_產品安全_環境管理控制措施》
+
+- **角色 Role：** PSIRT  
+- **輸入 Input：**  
+  《416_產品安全_事件解決方案公告_Product Security_Incident Resolution Announcement》  
+- **輸出 Output：**  
+  無 None.  
+- **參考 Reference：**  
+  章節 Chapter 6.8  
+  《308_產品安全_環境管理控制措施_Product Security_Environmental Management Control Measures》  
+
+由 PSIRT 將安全更新程式與《416_產品安全_事件解決方案公告》上架於外部公布管道；若須直接交付於需求方，則需遵照《308_產品安全_環境管理控制措施》安全交付之規範進行交付。本步驟之規範，請參考章節 6.8。本程序結束。  
+PSIRT publishes the security update program and the “416_Product Security_Incident Resolution Announcement” on external announcement channels. If direct delivery to the requester is required, it shall be delivered in accordance with the secure delivery requirements of “308_Product Security_Environmental Management Control Measures.” Please refer to chapter 6.8 for the regulations of this step. This process ends.
 
 #### L. 更新程式能量維護 Updater Program Capability Maintenance
-更新程式發布完成後，應由 SPMO 定期召集 PSIRT，收集各次安全更新執行時的缺失與建議，於執行《213_產品安全_管理審查程序》時提出檢討，持續改善安全更新品質並提升效率。
+
+更新程式發布完成後，應由 SPMO 定期召集 PSIRT，收集各次安全更新執行時的缺失與建議，於執行《213_產品安全_管理審查程序》時提出檢討，持續改善安全更新品質並提升效率。相關規範請參考章節 6.9。  
+After the update is released, SPMO shall regularly convene PSIRT to collect defects and recommendations from each security update implementation, and raise them during the execution of the “213_Product Security_Management Review Procedures” to continuously improve the quality and efficiency of security updates. Please refer to chapter 6.9 for the regulations of this step.
 
 ## 6. 作業規範 Operating Regulations
 
