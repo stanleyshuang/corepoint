@@ -284,11 +284,11 @@ End))
 
 ### 5.2 流程步驟 Process Steps
 
-#### A. 產品安全事件通報 Product Security Incident Reporting
-
 產品安全開發流程【產品安全發行】階段完成後，當產品安全事件通報人將產品安全事件透過XXXX系統通報時，系統會及時發布訊息通知PSIRT，之後啟動本流程。
 
 After the product security development process 【Product Security Release】 phase is completed, a message will be issued to notify PSIRT when a product security incident is notified through the XXXX system by a product security incident reporter, and then the process is initiated.
+
+#### A. 產品安全事件通報 Product Security Incident Reporting
 
 - **角色 Role：** PSIRT
 - **輸入 Input：** 產品安全事件資訊 Product Security Incident Information
