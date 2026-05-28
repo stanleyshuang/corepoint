@@ -104,24 +104,36 @@
 6. 英文樣式名稱須使用樣本實際樣式：`Body EN`、`H2_EN`、`H3_EN`、`H4_EN`、`H5_EN`。若腳本內部使用 alias，輸出前必須解析為樣本內存在的樣式。
 7. 清除樣本文件 body 中的既有文字、表格與附圖。
 8. 先辨識樣本中常用段落樣式，再將來源 Markdown 的章節、本文、清單與表格對應到適當樣式。
-9. 來源 Markdown 的標題階層應保留，但標題文字中的前置數字章節編號應於 DOCX 輸出時移除。轉換規則為 `## <n>. xxxx` 輸出為 `## xxxx`，`### <n.n> xxxx` 輸出為 `### xxxx`；例如 `## 1. 目的 Purpose` 應輸出為 `目的 Purpose`，`### 2.1 適用性與風險式加嚴要求 Applicability and Risk-based Enhancements` 應輸出為 `適用性與風險式加嚴要求 Applicability and Risk-based Enhancements`。此規則僅適用於 Markdown heading；若來源為未加 `#` 的本文編號清單，例如 `1. PSIRT 與 RD/DQV 應確認案件是否可重現...`，輸出至 MS Word 時必須保留 `1.`，不得削去清單編號。
-10. 來源 Markdown 的 bullet 清單應於中文段落反映 bullet 與縮排；若來源為縮排 bullet，例如 `   - 受影響 product family、型號、版本、平台與 BOM variant`，中文輸出應保留對應縮排並顯示 bullet。其英文翻譯段落應同步相同縮排，但不得顯示 bullet。
-11. 表格形式應參考 `template/QP-30-01 事件處理程序 V1.0 0528.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
-12. 當來源 Markdown 出現流程圖區塊或程序總覽位置時，插入 `template/vul_handle_n_disclose_flow.png`。
-13. 依 `template/樣本.docx` 的雙語形式呈現：中文後緊接英文翻譯。
-14. 中文來源文字為主控內容，不因英文草稿翻譯而改寫政策含義。
-15. 不新增來源文件未明確支持的公司政策、責任承諾或法遵判定。
-16. 來源 Markdown 的文件控制區塊僅供追溯使用；轉換時應明確排除自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的所有內容。`## 1. 目的 Purpose` 本身必須保留，但輸出至正式 DOCX body 時應移除章節編號，起始段落為 `目的 Purpose`。
-17. 若來源 Markdown 的 Mermaid 區塊已由流程圖圖片取代，不應額外新增基準文件不存在的「流程圖 / Flow Chart」標題；圖片應插入於程序總覽章節中，並維持基準文件的圖片數量與位置邏輯。
-18. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用既有樣本 / 基準文件中的 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
-19. 英文段落的縮排、行距、段前段後、對齊與分行分頁設定，應比照其相對應中文段落；英文樣式可保留字型語系差異，但 paragraph formatting 不得與對應中文段落分岔。
-20. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
-21. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
-22. 若新增或修改中文內容導致找不到英文對照，流程應 fail-fast 並輸出待翻譯清單，不得產出缺英文段落的正式 DOCX。
-23. 英文翻譯來源僅允許使用人工審核之 `prompt/translation/translation_memory_l2_01.json`、`prompt/translation/glossary_psirt.json` 與腳本內已審核固定字串；不得自既有產出 DOCX、模板 DOCX 或機器翻譯結果自動建立可信 translation memory。
-24. 英文輸出必須通過 `prompt/translation/blacklist_english.json` 品質 gate；若命中污染句、錯譯、錯字或禁止詞，流程應 fail-fast 並輸出 blocked English report。
-25. 可使用外部 LLM / API 產生 draft translation candidate，但候選稿只能輸出至 `tmp/translation_candidates_l2_01.json`；候選稿必須經 Translation Quality Reviewer 審查與人工確認後，才可手動納入 `prompt/translation/translation_memory_l2_01.json`。
-26. API key 應由環境變數提供，例如 `OPENAI_API_KEY`；不得寫入 repo、prompt、translation memory、candidate 或 review 檔。
+9. 來源 Markdown 的標題階層應保留，但標題文字中的前置數字章節編號應於 DOCX 輸出時移除。轉換規則為 `## <n>. xxxx` 輸出為 `## xxxx`，`### <n.n> xxxx` 輸出為 `### xxxx`；例如 `## 1. 目的 Purpose` 應輸出為 `目的 Purpose`，`### 2.1 適用性與風險式加嚴要求 Applicability and Risk-based Enhancements` 應輸出為 `適用性與風險式加嚴要求 Applicability and Risk-based Enhancements`。
+10. 若來源為未加 `#` 的本文編號清單，例如 `1. IEI 應維持至少一個公開單一聯絡窗口...`，中文輸出至 MS Word 時必須保留 `1.`，不得削去清單編號；但其英文翻譯段落不得再輸出數字編號，應輸出為 `IEI shall maintain at least one public single point of contact...`，不得輸出為 `1. IEI shall maintain...`。
+11. 若來源為數字起始的清單式標題或小節項目，例如 `1. 產品識別能力`，中文輸出應保留 `1.`；其英文翻譯應移除前置數字，輸出為 `Product identification capability`，不得輸出為 `1. Product identification capability`。
+12. 來源 Markdown 的 bullet 清單應於中文段落反映 bullet 與縮排；若來源為縮排 bullet，例如 `   - 受影響 product family、型號、版本、平台與 BOM variant`，中文輸出應保留對應縮排並顯示 bullet。其英文翻譯段落應同步相同縮排，但不得顯示 bullet。
+13. 表格形式應參考 `template/QP-30-01 事件處理程序 V1.0 0528.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
+14. 當來源 Markdown 出現流程圖區塊或程序總覽位置時，插入 `template/vul_handle_n_disclose_flow.png`。
+15. 依 `template/樣本.docx` 的雙語形式呈現：中文後緊接英文翻譯。
+16. 中文來源文字為主控內容，不因英文草稿翻譯而改寫政策含義。
+17. 不新增來源文件未明確支持的公司政策、責任承諾或法遵判定。
+18. 來源 Markdown 的文件控制區塊僅供追溯使用；轉換時應明確排除自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的所有內容。`## 1. 目的 Purpose` 本身必須保留，但輸出至正式 DOCX body 時應移除章節編號，起始段落為 `目的 Purpose`。
+19. 若來源 Markdown 的 Mermaid 區塊已由流程圖圖片取代，不應額外新增基準文件不存在的「流程圖 / Flow Chart」標題；圖片應插入於程序總覽章節中，並維持基準文件的圖片數量與位置邏輯。
+20. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用既有樣本 / 基準文件中的 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
+21. 英文段落的縮排、行距、段前段後、對齊與分行分頁設定，應比照其相對應中文段落；英文樣式可保留字型語系差異，但 paragraph formatting 不得與對應中文段落分岔。
+22. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
+23. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
+24. 若新增或修改中文內容導致找不到英文對照，流程應 fail-fast 並輸出待翻譯清單，不得產出缺英文段落的正式 DOCX。
+25. 英文翻譯來源僅允許使用人工審核之 `prompt/translation/translation_memory_l2_01.json`、`prompt/translation/glossary_psirt.json` 與腳本內已審核固定字串；不得自既有產出 DOCX、模板 DOCX 或機器翻譯結果自動建立可信 translation memory。
+26. 英文輸出必須通過 `prompt/translation/blacklist_english.json` 品質 gate；若命中污染句、錯譯、錯字或禁止詞，流程應 fail-fast 並輸出 blocked English report。
+27. 可使用外部 LLM / API 產生 draft translation candidate，但候選稿只能輸出至 `tmp/translation_candidates_l2_01.json`；候選稿必須經 Translation Quality Reviewer 審查與人工確認後，才可手動納入 `prompt/translation/translation_memory_l2_01.json`。
+28. API key 應由環境變數提供，例如 `OPENAI_API_KEY`；不得寫入 repo、prompt、translation memory、candidate 或 review 檔。
+
+### 4.1 MS Word 格式防繞過要求
+
+1. 所有由 L2 / QP 類 Markdown 產生之正式或候選 DOCX，均應透過本 workflow 與 `build/` 下之生成腳本執行；不得以手工另存、臨時腳本、未驗證轉檔工具或直接複製既有 DOCX 的方式繞過本流程。
+2. `prompt/workflow/markdown_convert_msword.md` 是 MS Word 轉換規格的唯一流程入口；其他 plan 或 prompt 若提出 L2 內容修改，只能引用本 workflow，不應另行定義或覆蓋 Word 樣式、頁首頁尾、section、字級、Mermaid 圖片或輸出命名規則。
+3. `build/build_qp_docx.py` 應在 dry-run 與正式生成階段檢查 `template/文件管制程序2.7.doc`、`template/樣本.docx`、流程圖圖片、translation memory、glossary 與 blacklist 均存在且可用。
+4. `build/build_qp_docx.py` 應驗證 `template/樣本.docx` 內必要樣式存在，且 `Normal`、`H1`、`H2`、`H3`、`H4`、`H5`、`List Paragraph`、`Body`、`Body EN` 與 `H2_EN`/`H3_EN`/`H4_EN`/`H5_EN` 有效字級均為 12pt；若不符合，流程應 fail-fast。
+5. `build/build_qp_docx.py` 應使用樣本實際樣式名稱，至少包含 `Body EN`、`H2_EN`、`H3_EN`、`H4_EN`、`H5_EN`；若腳本內部使用 alias，輸出前必須解析為樣本內存在的樣式，避免回退為 `Normal` 或其他非預期格式。
+6. Mermaid 圖片替代規則必須由本 workflow 與 build script 控制；若來源 Mermaid 已由 `template/vul_handle_n_disclose_flow.png` 取代，不得額外新增「流程圖 / Flow Chart」標題。
+7. 任何對 build script、Word 樣本、文件管制範本或 DOCX 輸出規則的調整，均應同步更新本 workflow，並至少通過 dry-run、樣式字級檢查與 OpenXML package 驗證後，才可視為可用流程。
 
 ## 5. 執行流程
 
@@ -210,8 +222,9 @@
 
 1. 使用 `.venv/bin/python build/build_qp_docx.py --dry-run` 執行 dry-run，確認來源 Markdown、Word 樣本、流程圖圖片、glossary、blacklist 與 translation memory 路徑均存在。
 2. 若 `doc/QP-30-01 事件處理程序 V1.0.docx` 已存在，dry-run 預期應回報 `resolved_output` 為加上當日日期後綴或日期加版號後綴的檔名。
-3. dry-run 應同時檢查來源正式內容起點、Mermaid hash、translation memory 格式與 blacklist。
+3. dry-run 應同時檢查來源正式內容起點、Mermaid hash、translation memory 格式、blacklist、文件管制程序範本存在性、樣本必要樣式存在性與樣式有效字級 12pt。
 4. dry-run 應回報 `write=false`，且不得新增或覆蓋任何 DOCX。
+5. dry-run 若偵測到樣式缺漏、必要樣式有效字級不是 12pt、英文樣式名稱無法解析、文件管制程序範本不存在或輸出路徑會覆蓋既有檔案，應 fail-fast，不得進入正式生成。
 
 ### 5.8 差異分析重點
 
@@ -240,6 +253,8 @@
 - 若來源起點、Mermaid hash、英文翻譯完整性或 blacklist 檢查失敗，生成流程應中止並回報原因。
 - DOCX package 結構有效，可由 Word 或相容工具開啟。
 - 若指定產出文件已存在，新產物應依 `_YYYYMMDD`、`_YYYYMMDD_v2`、`_YYYYMMDD_v3` 的順序自動改名，不得覆蓋既有檔案。
+- DOCX 必須由本 workflow 與 `build/build_qp_docx.py` 或經文件擁有者核准且已同步更新本 workflow 的等效 build script 產出；不得接受未經本 workflow 驗證之手工轉檔或臨時轉檔結果作為正式候選版。
+- 驗收時應確認 `template/文件管制程序2.7.doc` 已納入檢查、`template/樣本.docx` 必要樣式有效字級均為 12pt、英文樣式名稱使用樣本實際名稱，且 Mermaid 圖片替代未新增額外「流程圖 / Flow Chart」標題。
 
 ## 7. 已知限制與人工審閱事項
 

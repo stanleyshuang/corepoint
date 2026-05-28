@@ -596,7 +596,7 @@ def add_numbered_bilingual(doc: "Document", number: str, zh: str, zh_style: str,
     en = translate(zh)
     zh_para = add_para(doc, zh_text, zh_style)
     if en and en != zh:
-        en_para = add_para(doc, f"{number}. {en}", en_style or english_style(zh_style))
+        en_para = add_para(doc, en, en_style or english_style(zh_style))
         sync_paragraph_format(zh_para, en_para)
 
 
