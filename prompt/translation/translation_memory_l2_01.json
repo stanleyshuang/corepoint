@@ -446,7 +446,20 @@
     "首次回覆時間": "Initial response time",
     "驗證修補有效性、回歸測試、相容性與發行證據": "Verification of remediation effectiveness, regression testing, compatibility, and release evidence",
     "驗證範圍與發布條件": "Validation scope and release conditions",
-    "高風險案件修補完成時間": "Remediation completion time for high-risk cases"
+    "高風險案件修補完成時間": "Remediation completion time for high-risk cases",
+    "適用範圍 Applicable Scope": "Applicable Scope",
+    "組織與責任 Organization and Responsibility": "Organization and Responsibility",
+    "角色與責任 Roles and Responsibilities": "Roles and Responsibilities",
+    "定義 Definitions": "Definitions",
+    "流程圖 Flow Chart": "Flow Chart",
+    "程序 Procedure": "Procedure",
+    "相關文件 Related Documents": "Related Documents",
+    "附件 Attachments": "Attachments",
+    "產品安全事件管理程序": "Product Security Incident Management Procedure",
+    "產品安全更新管理程序": "Product Security Update Management Procedure",
+    "弱點通報受理、回覆與對外溝通作業文件": "Vulnerability Report Intake, Response, and External Communication Work Instruction",
+    "弱點分流、分析、Jira 管理、揭露與公告等下階作業文件": "Lower-level work instructions for vulnerability triage, analysis, Jira management, disclosure, and advisories",
+    "依文件管制程序 6.4.2 調整 L2-01 主章節架構，收斂為目的、適用範圍、組織與責任、定義、流程圖、程序、相關文件與附件；原程序控制要求僅搬移降階，未改變政策含義": "Adjusted the L2-01 main chapter structure according to Document Control Procedure 6.4.2, consolidating it into Purpose, Applicable Scope, Organization and Responsibility, Definitions, Flow Chart, Procedure, Related Documents, and Attachments; existing procedure control requirements were only moved and demoted without changing policy meaning"
   },
   "notes": [
     "This file contains reviewed or intentionally seeded translations only.",
