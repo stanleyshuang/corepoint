@@ -486,6 +486,15 @@ def sync_paragraph_format(source, target) -> None:
             setattr(target.paragraph_format, attr, value)
 
 
+def apply_markdown_indent(paragraph, indent_spaces: int) -> None:
+    from docx.shared import Pt
+
+    if indent_spaces <= 0:
+        return
+    level = max(0, indent_spaces // 2)
+    paragraph.paragraph_format.left_indent = Pt(24 + (level * 18))
+
+
 def add_para(doc: "Document", text: str, style: str = "Body"):
     p = doc.add_paragraph(style=style)
     p.add_run(text)
@@ -506,6 +515,30 @@ def add_bilingual(doc: "Document", zh: str, zh_style: str, en_style: str | None 
     zh_para = add_para(doc, zh, zh_style)
     if en and en != zh:
         en_para = add_para(doc, en, en_style or english_style(zh_style))
+        sync_paragraph_format(zh_para, en_para)
+
+
+def add_numbered_bilingual(doc: "Document", number: str, zh: str, zh_style: str, en_style: str | None = None) -> None:
+    zh = clean_inline(zh)
+    if not zh:
+        return
+    zh_text = f"{number}. {zh}"
+    en = translate(zh)
+    zh_para = add_para(doc, zh_text, zh_style)
+    if en and en != zh:
+        en_para = add_para(doc, f"{number}. {en}", en_style or english_style(zh_style))
+        sync_paragraph_format(zh_para, en_para)
+
+
+def add_bullet_bilingual(doc: "Document", zh: str, indent_spaces: int) -> None:
+    zh = clean_inline(zh)
+    if not zh:
+        return
+    en = translate(zh)
+    zh_para = add_para(doc, f"• {zh}", "af")
+    apply_markdown_indent(zh_para, indent_spaces)
+    if en and en != zh:
+        en_para = add_para(doc, en, "BodyEN")
         sync_paragraph_format(zh_para, en_para)
 
 
@@ -592,14 +625,14 @@ def render_markdown(doc: "Document", lines: list[str]) -> None:
             add_bilingual(doc, strip_heading_number(m.group(2)), style)
             i += 1
             continue
-        m = re.match(r"^[-*]\s+(.+)$", line)
+        m = re.match(r"^(\s*)[-*]\s+(.+)$", raw)
         if m:
-            add_bilingual(doc, m.group(1), "af", "BodyEN")
+            add_bullet_bilingual(doc, m.group(2), len(m.group(1).replace("\t", "    ")))
             i += 1
             continue
-        m = re.match(r"^\d+\.\s+(.+)$", line)
+        m = re.match(r"^(\d+)\.\s+(.+)$", line)
         if m:
-            add_bilingual(doc, m.group(1), "af", "BodyEN")
+            add_numbered_bilingual(doc, m.group(1), m.group(2), "af", "BodyEN")
             i += 1
             continue
         if line == "---":

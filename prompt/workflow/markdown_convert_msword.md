@@ -98,23 +98,24 @@
 2. 複製樣本文件後，保留頁首、頁尾、section、頁面設定、樣式定義與既有版面語氣。
 3. 清除樣本文件 body 中的既有文字、表格與附圖。
 4. 先辨識樣本中常用段落樣式，再將來源 Markdown 的章節、本文、清單與表格對應到適當樣式。
-5. 來源 Markdown 的標題階層應保留，但標題文字中的前置數字章節編號應於 DOCX 輸出時移除。轉換規則為 `## <n>. xxxx` 輸出為 `## xxxx`，`### <n.n> xxxx` 輸出為 `### xxxx`；例如 `## 1. 目的 Purpose` 應輸出為 `目的 Purpose`，`### 2.1 適用性與風險式加嚴要求 Applicability and Risk-based Enhancements` 應輸出為 `適用性與風險式加嚴要求 Applicability and Risk-based Enhancements`。
-6. 表格形式應參考 `template/QP-30-01 事件處理程序 V1.0 0528.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
-7. 當來源 Markdown 出現流程圖區塊或程序總覽位置時，插入 `template/vul_handle_n_disclose_flow.png`。
-8. 依 `template/樣本.docx` 的雙語形式呈現：中文後緊接英文翻譯。
-9. 中文來源文字為主控內容，不因英文草稿翻譯而改寫政策含義。
-10. 不新增來源文件未明確支持的公司政策、責任承諾或法遵判定。
-11. 來源 Markdown 的文件控制區塊僅供追溯使用；轉換時應明確排除自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的所有內容。`## 1. 目的 Purpose` 本身必須保留，但輸出至正式 DOCX body 時應移除章節編號，起始段落為 `目的 Purpose`。
-12. 若來源 Markdown 的 Mermaid 區塊已由流程圖圖片取代，不應額外新增基準文件不存在的「流程圖 / Flow Chart」標題；圖片應插入於程序總覽章節中，並維持基準文件的圖片數量與位置邏輯。
-13. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用既有樣本 / 基準文件中的 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
-14. 英文段落的縮排、行距、段前段後、對齊與分行分頁設定，應比照其相對應中文段落；英文樣式可保留字型語系差異，但 paragraph formatting 不得與對應中文段落分岔。
-15. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
-16. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
-17. 若新增或修改中文內容導致找不到英文對照，流程應 fail-fast 並輸出待翻譯清單，不得產出缺英文段落的正式 DOCX。
-18. 英文翻譯來源僅允許使用人工審核之 `prompt/translation/translation_memory_l2_01.json`、`prompt/translation/glossary_psirt.json` 與腳本內已審核固定字串；不得自既有產出 DOCX、模板 DOCX 或機器翻譯結果自動建立可信 translation memory。
-19. 英文輸出必須通過 `prompt/translation/blacklist_english.json` 品質 gate；若命中污染句、錯譯、錯字或禁止詞，流程應 fail-fast 並輸出 blocked English report。
-20. 可使用外部 LLM / API 產生 draft translation candidate，但候選稿只能輸出至 `tmp/translation_candidates_l2_01.json`；候選稿必須經 Translation Quality Reviewer 審查與人工確認後，才可手動納入 `prompt/translation/translation_memory_l2_01.json`。
-21. API key 應由環境變數提供，例如 `OPENAI_API_KEY`；不得寫入 repo、prompt、translation memory、candidate 或 review 檔。
+5. 來源 Markdown 的標題階層應保留，但標題文字中的前置數字章節編號應於 DOCX 輸出時移除。轉換規則為 `## <n>. xxxx` 輸出為 `## xxxx`，`### <n.n> xxxx` 輸出為 `### xxxx`；例如 `## 1. 目的 Purpose` 應輸出為 `目的 Purpose`，`### 2.1 適用性與風險式加嚴要求 Applicability and Risk-based Enhancements` 應輸出為 `適用性與風險式加嚴要求 Applicability and Risk-based Enhancements`。此規則僅適用於 Markdown heading；若來源為未加 `#` 的本文編號清單，例如 `1. PSIRT 與 RD/DQV 應確認案件是否可重現...`，輸出至 MS Word 時必須保留 `1.`，不得削去清單編號。
+6. 來源 Markdown 的 bullet 清單應於中文段落反映 bullet 與縮排；若來源為縮排 bullet，例如 `   - 受影響 product family、型號、版本、平台與 BOM variant`，中文輸出應保留對應縮排並顯示 bullet。其英文翻譯段落應同步相同縮排，但不得顯示 bullet。
+7. 表格形式應參考 `template/QP-30-01 事件處理程序 V1.0 0528.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
+8. 當來源 Markdown 出現流程圖區塊或程序總覽位置時，插入 `template/vul_handle_n_disclose_flow.png`。
+9. 依 `template/樣本.docx` 的雙語形式呈現：中文後緊接英文翻譯。
+10. 中文來源文字為主控內容，不因英文草稿翻譯而改寫政策含義。
+11. 不新增來源文件未明確支持的公司政策、責任承諾或法遵判定。
+12. 來源 Markdown 的文件控制區塊僅供追溯使用；轉換時應明確排除自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的所有內容。`## 1. 目的 Purpose` 本身必須保留，但輸出至正式 DOCX body 時應移除章節編號，起始段落為 `目的 Purpose`。
+13. 若來源 Markdown 的 Mermaid 區塊已由流程圖圖片取代，不應額外新增基準文件不存在的「流程圖 / Flow Chart」標題；圖片應插入於程序總覽章節中，並維持基準文件的圖片數量與位置邏輯。
+14. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用既有樣本 / 基準文件中的 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
+15. 英文段落的縮排、行距、段前段後、對齊與分行分頁設定，應比照其相對應中文段落；英文樣式可保留字型語系差異，但 paragraph formatting 不得與對應中文段落分岔。
+16. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
+17. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
+18. 若新增或修改中文內容導致找不到英文對照，流程應 fail-fast 並輸出待翻譯清單，不得產出缺英文段落的正式 DOCX。
+19. 英文翻譯來源僅允許使用人工審核之 `prompt/translation/translation_memory_l2_01.json`、`prompt/translation/glossary_psirt.json` 與腳本內已審核固定字串；不得自既有產出 DOCX、模板 DOCX 或機器翻譯結果自動建立可信 translation memory。
+20. 英文輸出必須通過 `prompt/translation/blacklist_english.json` 品質 gate；若命中污染句、錯譯、錯字或禁止詞，流程應 fail-fast 並輸出 blocked English report。
+21. 可使用外部 LLM / API 產生 draft translation candidate，但候選稿只能輸出至 `tmp/translation_candidates_l2_01.json`；候選稿必須經 Translation Quality Reviewer 審查與人工確認後，才可手動納入 `prompt/translation/translation_memory_l2_01.json`。
+22. API key 應由環境變數提供，例如 `OPENAI_API_KEY`；不得寫入 repo、prompt、translation memory、candidate 或 review 檔。
 
 ## 5. 執行流程
 
