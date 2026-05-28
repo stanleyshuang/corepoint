@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +18,10 @@ TEMPLATE = PROJECT_ROOT / "template" / "樣本.docx"
 SOURCE_MD = PROJECT_ROOT / "doc" / "L2-01_vulnerability-handling-and-disclosure-process.md"
 FLOW_IMAGE = PROJECT_ROOT / "template" / "vul_handle_n_disclose_flow.png"
 OUTPUT = PROJECT_ROOT / "doc" / "QP-30-01 事件處理程序 V1.0.docx"
+TRANSLATION_DIR = PROJECT_ROOT / "prompt" / "translation"
+GLOSSARY = TRANSLATION_DIR / "glossary_psirt.json"
+BLACKLIST = TRANSLATION_DIR / "blacklist_english.json"
+TRANSLATION_MEMORY_FILE = TRANSLATION_DIR / "translation_memory_l2_01.json"
 FENCE = chr(96) * 3
 ARGOS_READY: bool | None = None
 SOURCE_START_HEADING = "## 1. 目的 Purpose"
@@ -24,8 +29,11 @@ SOURCE_START_RE = re.compile(r"^##\s+(?:\d+\.\s+)?目的\s+Purpose\s*$")
 SOURCE_CONTROL_HEADING = "# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process"
 KNOWN_MERMAID_SHA256 = "cf06288f248d0a26ba8b71655d84ed9d9e6f947ba8d7787b1e71bf52a901cf27"
 MISSING_TRANSLATION_REPORT = PROJECT_ROOT / "tmp" / "missing_translations.txt"
+BLOCKED_ENGLISH_REPORT = PROJECT_ROOT / "tmp" / "blocked_english.txt"
 TRANSLATION_MEMORY: dict[str, str] = {}
+BLOCKED_PHRASES: list[dict[str, str]] = []
 MISSING_TRANSLATIONS: set[str] = set()
+BLOCKED_ENGLISH: list[str] = []
 
 
 def resolve_output_path(path: Path, date_suffix: str | None = None) -> Path:
@@ -51,6 +59,9 @@ def validate_inputs() -> list[str]:
         ("Word 樣本", TEMPLATE),
         ("來源 Markdown", SOURCE_MD),
         ("流程圖圖片", FLOW_IMAGE),
+        ("術語表", GLOSSARY),
+        ("英文黑名單", BLACKLIST),
+        ("人工翻譯記憶庫", TRANSLATION_MEMORY_FILE),
     ):
         if not path.exists():
             missing.append(f"{label} 不存在: {path}")
@@ -227,30 +238,81 @@ def clean_inline(text: str) -> str:
     return text.strip().strip(chr(96))
 
 
-def iter_docx_paragraph_text(path: Path) -> list[str]:
-    from docx import Document
-
-    if not path.exists():
-        return []
-    doc = Document(str(path))
-    texts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                texts.extend(p.text.strip() for p in cell.paragraphs if p.text.strip())
-    return texts
+def load_json_object(path: Path) -> dict:
+    with path.open(encoding="utf-8") as handle:
+        data = json.load(handle)
+    if not isinstance(data, dict):
+        raise SystemExit(f"JSON 格式錯誤，根節點必須為 object: {path}")
+    return data
 
 
-def build_translation_memory() -> dict[str, str]:
+def load_translation_memory() -> dict[str, str]:
+    data = load_json_object(TRANSLATION_MEMORY_FILE)
+    translations = data.get("translations", {})
+    if not isinstance(translations, dict):
+        raise SystemExit(f"translation memory 格式錯誤: {TRANSLATION_MEMORY_FILE}")
+
     memory: dict[str, str] = {}
-    for path in (OUTPUT, TEMPLATE):
-        texts = iter_docx_paragraph_text(path)
-        for current, nxt in zip(texts, texts[1:]):
-            zh = clean_inline(current)
-            en = clean_inline(nxt)
-            if has_cjk(zh) and en and not has_cjk(en):
-                memory.setdefault(zh, en)
+    for zh, en in translations.items():
+        source = clean_inline(str(zh))
+        target = clean_inline(str(en))
+        if not source or not target:
+            continue
+        if has_cjk(target):
+            raise SystemExit(f"translation memory 英文含中文，請修正: {source}")
+        memory[source] = target
     return memory
+
+
+def validate_translation_memory(memory: dict[str, str]) -> None:
+    for source, target in memory.items():
+        validate_english_text(target, source)
+
+
+def load_blocked_phrases() -> list[dict[str, str]]:
+    blocked: list[dict[str, str]] = []
+
+    blacklist = load_json_object(BLACKLIST)
+    for entry in blacklist.get("blocked_phrases", []):
+        if isinstance(entry, dict) and entry.get("phrase"):
+            blocked.append(
+                {
+                    "phrase": str(entry["phrase"]),
+                    "reason": str(entry.get("reason", "")),
+                }
+            )
+
+    glossary = load_json_object(GLOSSARY)
+    for entry in glossary.get("forbidden_terms", []):
+        if isinstance(entry, dict) and entry.get("term"):
+            blocked.append(
+                {
+                    "phrase": str(entry["term"]),
+                    "reason": str(entry.get("reason", "Forbidden by glossary.")),
+                }
+            )
+    return blocked
+
+
+def record_blocked_english(text: str, source: str, phrase: str, reason: str) -> None:
+    BLOCKED_ENGLISH.append(f"{phrase} | {reason} | source={source} | text={text}")
+
+
+def validate_english_text(text: str, source: str) -> bool:
+    lowered = text.lower()
+    ok = True
+    for entry in BLOCKED_PHRASES:
+        phrase = entry["phrase"]
+        if phrase.lower() in lowered:
+            record_blocked_english(text, source, phrase, entry.get("reason", ""))
+            ok = False
+    return ok
+
+
+def approved_translation(source: str, target: str) -> str:
+    if validate_english_text(target, source):
+        return target
+    return ""
 
 
 def mermaid_blocks(lines: list[str]) -> list[str]:
@@ -317,6 +379,13 @@ def write_missing_translation_report() -> None:
     MISSING_TRANSLATION_REPORT.write_text("\n".join(content) + "\n", encoding="utf-8")
 
 
+def write_blocked_english_report() -> None:
+    BLOCKED_ENGLISH_REPORT.parent.mkdir(parents=True, exist_ok=True)
+    content = ["# Blocked English", ""]
+    content.extend(f"- {item}" for item in BLOCKED_ENGLISH)
+    BLOCKED_ENGLISH_REPORT.write_text("\n".join(content) + "\n", encoding="utf-8")
+
+
 def split_markdown_row(raw: str) -> list[str]:
     cells = []
     current = []
@@ -341,35 +410,13 @@ def split_markdown_row(raw: str) -> list[str]:
 def translate_sentence(text: str) -> str:
     source = clean_inline(text)
     if source in TRANSLATION_MEMORY:
-        return TRANSLATION_MEMORY[source]
+        return approved_translation(source, TRANSLATION_MEMORY[source])
     if source in EXACT_TRANSLATIONS:
-        return EXACT_TRANSLATIONS[source]
-    argos = translate_with_argos(source)
-    if argos:
-        return argos
+        return approved_translation(source, EXACT_TRANSLATIONS[source])
     if has_cjk(source):
         MISSING_TRANSLATIONS.add(source)
         return ""
-    return source
-
-
-def translate_with_argos(text: str) -> str:
-    global ARGOS_READY
-    if not has_cjk(text):
-        return text
-    if ARGOS_READY is False:
-        return ""
-    try:
-        import argostranslate.translate
-
-        result = argostranslate.translate.translate(text, "zt", "en")
-        ARGOS_READY = True
-        result = re.sub(r"\s+", " ", result).strip()
-        if result and result != text:
-            return result
-    except Exception:
-        ARGOS_READY = False
-    return ""
+    return approved_translation(source, source)
 
 
 def translate(text: str) -> str:
@@ -377,16 +424,21 @@ def translate(text: str) -> str:
     if not text:
         return ""
     if text in TRANSLATION_MEMORY:
-        return TRANSLATION_MEMORY[text]
+        return approved_translation(text, TRANSLATION_MEMORY[text])
     if text in SECTION_TRANSLATIONS:
-        return SECTION_TRANSLATIONS[text]
+        return approved_translation(text, SECTION_TRANSLATIONS[text])
     if text in EXACT_TRANSLATIONS:
-        return EXACT_TRANSLATIONS[text]
+        return approved_translation(text, EXACT_TRANSLATIONS[text])
     if not has_cjk(text):
-        return text
+        return approved_translation(text, text)
     if "：" in text:
         head, tail = text.split("：", 1)
-        return f"{translate(head)}: {translate_sentence(tail)}"
+        head_en = translate(head)
+        tail_en = translate_sentence(tail)
+        if not head_en or not tail_en:
+            MISSING_TRANSLATIONS.add(text)
+            return ""
+        return approved_translation(text, f"{head_en}: {tail_en}")
     return translate_sentence(text)
 
 
@@ -568,6 +620,9 @@ def set_default_fonts(doc: "Document") -> None:
 
 
 def main() -> None:
+    global TRANSLATION_MEMORY
+    global BLOCKED_PHRASES
+
     parser = argparse.ArgumentParser(description="Build QP DOCX from the L2 Markdown source.")
     parser.add_argument("--dry-run", action="store_true", help="Show resolved paths without writing the DOCX.")
     parser.add_argument("--date-suffix", help="Override the YYYYMMDD suffix used when the output exists.")
@@ -582,6 +637,16 @@ def main() -> None:
 
     raw_lines = SOURCE_MD.read_text(encoding="utf-8").splitlines()
     validate_source_lines(raw_lines)
+    BLOCKED_PHRASES = load_blocked_phrases()
+    TRANSLATION_MEMORY = load_translation_memory()
+    validate_translation_memory(TRANSLATION_MEMORY)
+
+    if BLOCKED_ENGLISH:
+        write_blocked_english_report()
+        raise SystemExit(
+            f"blocked_english={len(BLOCKED_ENGLISH)}; "
+            f"report={BLOCKED_ENGLISH_REPORT}"
+        )
 
     if args.dry_run:
         print(f"source={SOURCE_MD}")
@@ -597,15 +662,20 @@ def main() -> None:
 
     doc = Document(str(TEMPLATE))
     remove_body_content(doc)
-    global TRANSLATION_MEMORY
-    TRANSLATION_MEMORY = build_translation_memory()
     lines = trim_source_lines(raw_lines)
     render_markdown(doc, lines)
+    if BLOCKED_ENGLISH:
+        write_blocked_english_report()
     if MISSING_TRANSLATIONS:
         write_missing_translation_report()
+    if MISSING_TRANSLATIONS or BLOCKED_ENGLISH:
+        details = []
+        if MISSING_TRANSLATIONS:
+            details.append(f"missing_translations={len(MISSING_TRANSLATIONS)}; report={MISSING_TRANSLATION_REPORT}")
+        if BLOCKED_ENGLISH:
+            details.append(f"blocked_english={len(BLOCKED_ENGLISH)}; report={BLOCKED_ENGLISH_REPORT}")
         raise SystemExit(
-            f"missing_translations={len(MISSING_TRANSLATIONS)}; "
-            f"report={MISSING_TRANSLATION_REPORT}"
+            "; ".join(details)
         )
     set_default_fonts(doc)
     doc.save(str(output))

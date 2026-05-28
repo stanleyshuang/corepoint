@@ -22,6 +22,11 @@
 | 主要生成腳本 | `build/build_qp_docx.py` | 視實作方式調整 |
 | Python virtualenv | `.venv/` | 執行腳本前建立或確認 |
 | Python 套件 | `python-docx` | 應安裝於 `.venv/`，不得全域安裝 |
+| 術語表 | `prompt/translation/glossary_psirt.json` | 是 |
+| 英文黑名單 | `prompt/translation/blacklist_english.json` | 是 |
+| 人工翻譯記憶庫 | `prompt/translation/translation_memory_l2_01.json` | 是 |
+| 自動翻譯候選腳本 | `build/generate_translation_candidates.py` | 視缺翻譯時使用 |
+| 翻譯候選審查腳本 | `build/review_translation_candidates.py` | 視缺翻譯時使用 |
 | Persona 目錄 | `persona/` | 固定或依專案調整 |
 
 ### 2.1 輸出檔名衝突處理
@@ -42,6 +47,10 @@
 5. `template/vul_handle_n_disclose_flow.png` 是來源 Markdown 中 Mermaid 程序總覽對應的流程圖圖片。
 6. `build/build_qp_docx.py` 是主要生成腳本；執行前應確認其路徑設定與本節所列檔案位置一致。
 7. `persona/python_docx_build_engineer.md` 是 Python 執行環境與 DOCX 建置驗證之專責 persona。
+8. `prompt/translation/glossary_psirt.json`、`prompt/translation/blacklist_english.json` 與 `prompt/translation/translation_memory_l2_01.json` 是英文品質控制來源，應納入版控並經人工審閱。
+9. `persona/translation_quality_reviewer.md` 是自動翻譯候選稿進入正式 translation memory 前的品質審查角色。
+10. `build/generate_translation_candidates.py` 僅能產生 draft candidate 至 `tmp/translation_candidates_l2_01.json`，不得直接修改正式 translation memory 或 DOCX。
+11. `build/review_translation_candidates.py` 僅能產生本地審查結果至 `tmp/translation_review_l2_01.json`，不得自動核准入庫。
 
 ### 2.3 既有基準文件狀態
 
@@ -49,6 +58,7 @@
 2. 目前 `doc/QP-30-01 事件處理程序 V1.0.docx` 與 `template/QP-30-01 事件處理程序 V1.0 0528.docx` 內容雜湊相同；因此本次可將兩者視為同一份 golden baseline。
 3. 新生成檔應使用安全改名後的輸出路徑，例如 `doc/QP-30-01 事件處理程序 V1.0_YYYYMMDD.docx`，再與 golden baseline 比對。
 4. 比對結論應區分內容差異、翻譯差異、表格差異、圖片差異、頁首頁尾 / section 差異與腳本或環境問題。
+5. golden baseline 與既有產出 DOCX 不得作為可信英文翻譯來源；若其中英文品質未經人工審核，僅可作為版面與結構比對參考。
 
 ## 3. 參與 Persona 與分工
 
@@ -80,6 +90,7 @@
 2. Bilingual Document Editor：確認新增或異動中文內容均有可接受英文對照；若缺翻譯，不得產生看似完成的 DOCX。
 3. DOCX OpenXML Builder：確認 Markdown heading、清單、表格、Mermaid 圖片、頁首頁尾與 section 轉換未失真。
 4. Python DOCX Build Engineer：確認 `.venv`、dry-run、fail-fast、輸出檔名避覆蓋、DOCX package 驗證與 ignored artifact 狀態。
+5. Translation Quality Reviewer：審查外部 LLM / API 產生之 draft English candidate，確認術語、法遵語意、blacklist、污染句、數字與責任角色未失真；審查狀態可為 `approved`、`needs_revision`、`blocked` 或 `legal_review_required`。
 
 ## 4. 文件轉換原則
 
@@ -100,6 +111,10 @@
 15. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
 16. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
 17. 若新增或修改中文內容導致找不到英文對照，流程應 fail-fast 並輸出待翻譯清單，不得產出缺英文段落的正式 DOCX。
+18. 英文翻譯來源僅允許使用人工審核之 `prompt/translation/translation_memory_l2_01.json`、`prompt/translation/glossary_psirt.json` 與腳本內已審核固定字串；不得自既有產出 DOCX、模板 DOCX 或機器翻譯結果自動建立可信 translation memory。
+19. 英文輸出必須通過 `prompt/translation/blacklist_english.json` 品質 gate；若命中污染句、錯譯、錯字或禁止詞，流程應 fail-fast 並輸出 blocked English report。
+20. 可使用外部 LLM / API 產生 draft translation candidate，但候選稿只能輸出至 `tmp/translation_candidates_l2_01.json`；候選稿必須經 Translation Quality Reviewer 審查與人工確認後，才可手動納入 `prompt/translation/translation_memory_l2_01.json`。
+21. API key 應由環境變數提供，例如 `OPENAI_API_KEY`；不得寫入 repo、prompt、translation memory、candidate 或 review 檔。
 
 ## 5. 執行流程
 
@@ -111,7 +126,8 @@
 4. 檢查 `build/build_qp_docx.py` 的路徑設定是否與第 2 節一致，避免來源、樣本、圖片或輸出路徑錯置。
 5. 檢查 `.venv/` 是否存在；若不存在，使用 `python3 -m venv .venv` 建立。
 6. 使用 `.venv/bin/python -m pip show python-docx` 確認套件已安裝。若未安裝，應安裝於 `.venv/`，不得使用系統全域 Python 環境。
-7. dry-run 階段即應檢查來源正式內容起點與 Mermaid hash；若檢查失敗，不得進入正式生成。
+7. 確認 `prompt/translation/` 下的 glossary、blacklist 與 translation memory JSON 均存在且可解析。
+8. dry-run 階段即應檢查來源正式內容起點、Mermaid hash、translation memory 格式與 blacklist；若檢查失敗，不得進入正式生成。
 
 ### 5.2 樣本與參考文件分析
 
@@ -134,11 +150,28 @@
 2. 中文與英文應相鄰呈現，符合樣本文件中一行中文後接一行英文的閱讀形式。
 3. 英文翻譯應維持程序文件語氣，常用 shall / should / may 等規範語彙。
 4. 專有名詞、標準、法規、系統名稱與縮寫不得任意翻譯或改寫。
-5. 優先沿用 `template/樣本.docx` 與 golden baseline 中既有中英對照作為 translation memory，以降低同一中文句子在不同產物中翻譯不一致的風險。
+5. 優先沿用 `prompt/translation/translation_memory_l2_01.json` 中已人工審核之中英對照作為 translation memory，以降低同一中文句子在不同產物中翻譯不一致的風險。
 6. 生成式翻譯應視為 draft，需由文件擁有者、法務或流程負責人審閱。
 7. 不得將 `[Draft translation]`、半中文半英文機械替換句或明顯不可讀英文寫入正式 DOCX；此類段落應標記為待人工翻譯與審閱。
 8. 每一個英文段落建立後，應同步其對應中文段落的 paragraph formatting，至少包含 left/right/first-line indent、line spacing、space before/after、alignment、keep lines together、keep with next、page break before 與 widow/orphan control。
-9. 若 translation memory、既有樣本或核准翻譯表無法提供英文對照，應輸出 missing translations report 並中止生成。
+9. 若人工審核之 translation memory 或腳本內已審核固定字串無法提供英文對照，應輸出 missing translations report 並中止生成。
+10. 不得從未經審核之既有 DOCX 擷取英文作為 translation memory；若需新增翻譯，應先更新 `prompt/translation/translation_memory_l2_01.json`，並由文件擁有者或 bilingual editor 審閱。
+11. 若英文命中 blacklist，例如 `Syria Protests`、`sexed Vulnerability`、`CBOM/Parte`、`CPT/CSIRT`、`CERTT/CSIRT`、`CCA qualification`、`Exposition Status`、`Express Status` 或 `EPI status`，應輸出 blocked English report 並中止生成。
+12. 若需使用外部 LLM / API 加速補齊翻譯，應先執行 `build/generate_translation_candidates.py` 產生 draft candidates，再執行 `build/review_translation_candidates.py` 做本地品質審查；只有人工審核通過者可手動入庫。
+
+### 5.4.1 自動翻譯候選流程
+
+自動翻譯不得直接進入正式 DOCX，應依下列流程處理：
+
+1. DOCX 生成因缺英文翻譯中止後，使用 `tmp/missing_translations.txt` 作為輸入。
+2. 設定 `OPENAI_API_KEY`；如需指定模型，可設定 `OPENAI_TRANSLATION_MODEL`，預設由候選產生腳本指定。
+3. 執行 dry-run：`.venv/bin/python build/generate_translation_candidates.py --dry-run`。
+4. 執行候選產生：`.venv/bin/python build/generate_translation_candidates.py --limit <N>`；建議先小批次處理高風險章節。
+5. 執行本地審查：`.venv/bin/python build/review_translation_candidates.py`。
+6. 人工審閱 `tmp/translation_review_l2_01.json`，僅將 `approved` 且不需法務確認之翻譯手動加入 `prompt/translation/translation_memory_l2_01.json`。
+7. `legal_review_required` 項目須由法務、法遵或流程負責人審閱後才可入庫。
+8. `needs_revision` 與 `blocked` 項目不得入庫，需修訂或重譯。
+9. `tmp/translation_candidates_l2_01.json` 與 `tmp/translation_review_l2_01.json` 為工作產物，不納入 Git。
 
 ### 5.5 DOCX 建置
 
@@ -167,9 +200,9 @@
 
 ### 5.7 Dry-run 驗證
 
-1. 使用 `.venv/bin/python build/build_qp_docx.py --dry-run` 執行 dry-run，確認來源 Markdown、Word 樣本與流程圖圖片路徑均存在。
+1. 使用 `.venv/bin/python build/build_qp_docx.py --dry-run` 執行 dry-run，確認來源 Markdown、Word 樣本、流程圖圖片、glossary、blacklist 與 translation memory 路徑均存在。
 2. 若 `doc/QP-30-01 事件處理程序 V1.0.docx` 已存在，dry-run 預期應回報 `resolved_output` 為加上當日日期後綴或日期加版號後綴的檔名。
-3. dry-run 應同時檢查來源正式內容起點與 Mermaid hash。
+3. dry-run 應同時檢查來源正式內容起點、Mermaid hash、translation memory 格式與 blacklist。
 4. dry-run 應回報 `write=false`，且不得新增或覆蓋任何 DOCX。
 
 ### 5.8 差異分析重點
@@ -196,7 +229,7 @@
 - DOCX body 應自 `目的 Purpose` 開始，不得額外輸出來源 Markdown 中 `# L2-01...` 至 `## 1. 目的 Purpose` 前一行之間的文件控制區塊，且所有 Markdown heading 應移除前置數字章節編號。
 - 英文段落不得包含 `[Draft translation]` 或明顯機械替換文字。
 - 英文段落之縮排、行距、段前段後、對齊與分行分頁設定應與相對應中文段落一致。
-- 若來源起點、Mermaid hash 或英文翻譯完整性檢查失敗，生成流程應中止並回報原因。
+- 若來源起點、Mermaid hash、英文翻譯完整性或 blacklist 檢查失敗，生成流程應中止並回報原因。
 - DOCX package 結構有效，可由 Word 或相容工具開啟。
 - 若指定產出文件已存在，新產物應依 `_YYYYMMDD`、`_YYYYMMDD_v2`、`_YYYYMMDD_v3` 的順序自動改名，不得覆蓋既有檔案。
 
@@ -208,6 +241,8 @@
 4. CRA、主管機關通報、CNA 能力規劃、ODM/OEM 權責與客戶通知義務涉及法務或管理判定，需另行審閱。
 5. 若來源 Markdown 後續新增 Mermaid、圖片、表格或特殊格式，生成腳本需同步調整解析規則。
 6. 新增中文內容若未同步提供英文翻譯，生成流程會中止並輸出待翻譯清單；此為避免缺英文段落的刻意設計。
+7. 若英文 blacklist 命中，生成流程會中止並輸出 blocked English report；此為避免污染英文再次進入 DOCX 的刻意設計。
+8. 外部 LLM / API 產生之翻譯候選可能仍有語意反轉、術語漂移或法遵風險；必須經 Translation Quality Reviewer 與人工審核後才可入庫。
 
 ## 8. 後續重複使用方式
 

@@ -1,0 +1,88 @@
+{
+  "blocked_phrases": [
+    {
+      "phrase": "Syria Protests",
+      "reason": "Unrelated contaminated text."
+    },
+    {
+      "phrase": "special coverage Syria",
+      "reason": "Unrelated contaminated text."
+    },
+    {
+      "phrase": "sexed Vulnerability",
+      "reason": "Mistranslation of fixed vulnerability."
+    },
+    {
+      "phrase": "CBOM/Parte",
+      "reason": "Mistranslation of SBOM/component tracking."
+    },
+    {
+      "phrase": "scavengers",
+      "reason": "Mistranslation of firmware."
+    },
+    {
+      "phrase": "swirl widgets",
+      "reason": "Mistranslation of firmware/components."
+    },
+    {
+      "phrase": "sensitization",
+      "reason": "Mistranslation in technical context."
+    },
+    {
+      "phrase": "CPT/CSIRT",
+      "reason": "Typo; use CERT/CSIRT."
+    },
+    {
+      "phrase": "CERTT/CSIRT",
+      "reason": "Typo; use CERT/CSIRT."
+    },
+    {
+      "phrase": "CCA qualification",
+      "reason": "Typo; use CNA qualification."
+    },
+    {
+      "phrase": "Exposition Status",
+      "reason": "Mistranslation; use Exploitation Status."
+    },
+    {
+      "phrase": "Express Status",
+      "reason": "Mistranslation; use Exploitation Status."
+    },
+    {
+      "phrase": "EPI status",
+      "reason": "Mistranslation; use Exploitation Status."
+    },
+    {
+      "phrase": "Explicitly used",
+      "reason": "Mistranslation of Confirmed Active Exploitation."
+    },
+    {
+      "phrase": "The law prevails",
+      "reason": "Poor translation of compliance priority."
+    },
+    {
+      "phrase": "return tests",
+      "reason": "Mistranslation of regression testing."
+    },
+    {
+      "phrase": "mesh quarantine",
+      "reason": "Mistranslation of network segmentation."
+    },
+    {
+      "phrase": "expluit code",
+      "reason": "Typo; use exploit code."
+    },
+    {
+      "phrase": "system intercepts",
+      "reason": "Mistranslation of system screenshots."
+    },
+    {
+      "phrase": "security-advisory",
+      "reason": "IEI URL path should use security-advisories."
+    },
+    {
+      "phrase": "[Draft translation]",
+      "reason": "Placeholder text must not enter DOCX."
+    }
+  ]
+}
