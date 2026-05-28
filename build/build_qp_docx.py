@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +19,13 @@ FLOW_IMAGE = PROJECT_ROOT / "template" / "vul_handle_n_disclose_flow.png"
 OUTPUT = PROJECT_ROOT / "doc" / "QP-30-01 事件處理程序 V1.0.docx"
 FENCE = chr(96) * 3
 ARGOS_READY: bool | None = None
+SOURCE_START_HEADING = "## 1. 目的 Purpose"
+SOURCE_START_RE = re.compile(r"^##\s+(?:\d+\.\s+)?目的\s+Purpose\s*$")
+SOURCE_CONTROL_HEADING = "# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process"
+KNOWN_MERMAID_SHA256 = "cf06288f248d0a26ba8b71655d84ed9d9e6f947ba8d7787b1e71bf52a901cf27"
+MISSING_TRANSLATION_REPORT = PROJECT_ROOT / "tmp" / "missing_translations.txt"
+TRANSLATION_MEMORY: dict[str, str] = {}
+MISSING_TRANSLATIONS: set[str] = set()
 
 
 def resolve_output_path(path: Path, date_suffix: str | None = None) -> Path:
@@ -126,45 +134,85 @@ EXACT_TRANSLATIONS = {
 
 SECTION_TRANSLATIONS = {
     "L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process": "L2-01: Vulnerability Handling and Disclosure Process",
+    "目的 Purpose": "Purpose",
     "1. 目的 Purpose": "1. Purpose",
+    "範圍 Scope": "Scope",
     "2. 範圍 Scope": "2. Scope",
+    "適用性與風險式加嚴要求 Applicability and Risk-based Enhancements": "Applicability and Risk-based Enhancements",
     "2.1 適用性與風險式加嚴要求 Applicability and Risk-based Enhancements": "2.1 Applicability and Risk-based Enhancements",
+    "程序原則 Governing Principles": "Governing Principles",
     "3. 程序原則 Governing Principles": "3. Governing Principles",
+    "準備能力 Preparedness Capabilities": "Preparedness Capabilities",
     "3.1 準備能力 Preparedness Capabilities": "3.1 Preparedness Capabilities",
+    "名詞 Definitions": "Definitions",
     "4. 名詞 Definitions": "4. Definitions",
+    "弱點案件 Vulnerability Case": "Vulnerability Case",
     "4.1 弱點案件 Vulnerability Case": "4.1 Vulnerability Case",
+    "協調式弱點揭露 CVD": "Coordinated Vulnerability Disclosure (CVD)",
     "4.2 協調式弱點揭露 CVD": "4.2 Coordinated Vulnerability Disclosure (CVD)",
+    "已遭主動利用弱點 Actively Exploited Vulnerability": "Actively Exploited Vulnerability",
     "4.3 已遭主動利用弱點 Actively Exploited Vulnerability": "4.3 Actively Exploited Vulnerability",
+    "嚴重事件 Severe Incident": "Severe Incident",
     "4.4 嚴重事件 Severe Incident": "4.4 Severe Incident",
+    "支援期間 Support Period": "Support Period",
     "4.5 支援期間 Support Period": "4.5 Support Period",
+    "Jira 主案件 Master Jira Record": "Master Jira Record",
     "4.6 Jira 主案件 Master Jira Record": "4.6 Master Jira Record",
+    "角色與利害關係人 Roles and Stakeholders": "Roles and Stakeholders",
     "5. 角色與利害關係人 Roles and Stakeholders": "5. Roles and Stakeholders",
+    "程序總覽 Process Overview": "Process Overview",
     "6. 程序總覽 Process Overview": "6. Process Overview",
+    "流程要求 Process Requirements": "Process Requirements",
     "7. 流程要求 Process Requirements": "7. Process Requirements",
+    "受理與建案 Intake and Registration": "Intake and Registration",
     "7.1 受理與建案 Intake and Registration": "7.1 Intake and Registration",
+    "初步回覆與受理判定 Initial Response and Acceptance": "Initial Response and Acceptance",
     "7.2 初步回覆與受理判定 Initial Response and Acceptance": "7.2 Initial Response and Acceptance",
+    "驗證與產品影響分析 Verification and Product Impact Assessment": "Verification and Product Impact Assessment",
     "7.3 驗證與產品影響分析 Verification and Product Impact Assessment": "7.3 Verification and Product Impact Assessment",
+    "已遭利用狀態判定 Exploitation Status Determination": "Exploitation Status Determination",
     "7.4 已遭利用狀態判定 Exploitation Status Determination": "7.4 Exploitation Status Determination",
+    "修補或緩解規劃 Remediation and Mitigation Planning": "Remediation and Mitigation Planning",
     "7.5 修補或緩解規劃 Remediation and Mitigation Planning": "7.5 Remediation and Mitigation Planning",
+    "修補時程基準 Remediation Timing Baseline": "Remediation Timing Baseline",
     "7.6 修補時程基準 Remediation Timing Baseline": "7.6 Remediation Timing Baseline",
+    "驗證、發布與交付 Validation, Release and Delivery": "Validation, Release and Delivery",
     "7.7 驗證、發布與交付 Validation, Release and Delivery": "7.7 Validation, Release and Delivery",
+    "揭露與通知決策 Disclosure and Notification Decision": "Disclosure and Notification Decision",
     "7.8 揭露與通知決策 Disclosure and Notification Decision": "7.8 Disclosure and Notification Decision",
+    "CRA 強制通報 CRA Mandatory Reporting": "CRA Mandatory Reporting",
     "7.9 CRA 強制通報 CRA Mandatory Reporting": "7.9 CRA Mandatory Reporting",
+    "結案與持續改善 Closure and Continuous Improvement": "Closure and Continual Improvement",
     "7.10 結案與持續改善 Closure and Continuous Improvement": "7.10 Closure and Continual Improvement",
+    "對外溝通政策 External Communication Policy": "External Communication Policy",
     "8. 對外溝通政策 External Communication Policy": "8. External Communication Policy",
+    "對外窗口與通道": "External Contact Points and Channels",
     "8.1 對外窗口與通道": "8.1 External Contact Points and Channels",
+    "時限政策": "Timeline Policy",
     "8.2 時限政策": "8.2 Timeline Policy",
+    "對外訊息最小內容": "Minimum External Message Content",
     "8.3 對外訊息最小內容": "8.3 Minimum External Message Content",
+    "禁止過早揭露內容": "Prohibited Premature Disclosure Content",
     "8.4 禁止過早揭露內容": "8.4 Prohibited Premature Disclosure Content",
+    "利害關係人管理 Stakeholder Management": "Stakeholder Management",
     "9. 利害關係人管理 Stakeholder Management": "9. Stakeholder Management",
+    "Jira 記錄與資料保護 Jira Recordkeeping and Data Protection": "Jira Recordkeeping and Data Protection",
     "10. Jira 記錄與資料保護 Jira Recordkeeping and Data Protection": "10. Jira Recordkeeping and Data Protection",
+    "必填紀錄": "Required Records",
     "10.1 必填紀錄": "10.1 Required Records",
+    "已遭利用與 CRA 判定留痕要求": "Traceability Requirements for Exploitation and CRA Determinations",
     "10.2 已遭利用與 CRA 判定留痕要求": "10.2 Traceability Requirements for Exploitation and CRA Determinations",
+    "附件與敏感資料": "Attachments and Sensitive Data",
     "10.3 附件與敏感資料": "10.3 Attachments and Sensitive Data",
+    "保留與稽核": "Retention and Audit",
     "10.4 保留與稽核": "10.4 Retention and Audit",
+    "Jira 資料保存政策": "Jira Data Retention Policy",
     "10.5 Jira 資料保存政策": "10.5 Jira Data Retention Policy",
+    "稽核與量測 Audit and Metrics": "Audit and Metrics",
     "11. 稽核與量測 Audit and Metrics": "11. Audit and Metrics",
+    "文件治理與版控 Document Control": "Document Control",
     "12. 文件治理與版控 Document Control": "12. Document Control",
+    "修訂紀錄 Revision History": "Revision History",
     "13. 修訂紀錄 Revision History": "13. Revision History",
 }
 
@@ -179,45 +227,130 @@ def clean_inline(text: str) -> str:
     return text.strip().strip(chr(96))
 
 
+def iter_docx_paragraph_text(path: Path) -> list[str]:
+    from docx import Document
+
+    if not path.exists():
+        return []
+    doc = Document(str(path))
+    texts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                texts.extend(p.text.strip() for p in cell.paragraphs if p.text.strip())
+    return texts
+
+
+def build_translation_memory() -> dict[str, str]:
+    memory: dict[str, str] = {}
+    for path in (OUTPUT, TEMPLATE):
+        texts = iter_docx_paragraph_text(path)
+        for current, nxt in zip(texts, texts[1:]):
+            zh = clean_inline(current)
+            en = clean_inline(nxt)
+            if has_cjk(zh) and en and not has_cjk(en):
+                memory.setdefault(zh, en)
+    return memory
+
+
+def mermaid_blocks(lines: list[str]) -> list[str]:
+    blocks = []
+    in_code = False
+    code_lang = ""
+    code_buf: list[str] = []
+    for raw in lines:
+        line = raw.strip()
+        if line.startswith(FENCE):
+            if not in_code:
+                in_code = True
+                code_lang = line[3:].strip()
+                code_buf = []
+            else:
+                if code_lang == "mermaid":
+                    blocks.append("\n".join(code_buf).strip() + "\n")
+                in_code = False
+                code_lang = ""
+                code_buf = []
+            continue
+        if in_code:
+            code_buf.append(raw)
+    return blocks
+
+
+def validate_source_lines(lines: list[str]) -> None:
+    if not any(SOURCE_START_RE.match(line.strip()) for line in lines):
+        raise SystemExit(
+            "找不到正式內容起始標題。預期格式為 '## 1. 目的 Purpose' 或 '## 目的 Purpose'。"
+        )
+
+    blocks = mermaid_blocks(lines)
+    if not blocks:
+        return
+    if len(blocks) != 1:
+        raise SystemExit(f"Mermaid 區塊數量為 {len(blocks)}，需人工確認流程圖圖片對應關係。")
+
+    digest = hashlib.sha256(blocks[0].encode("utf-8")).hexdigest()
+    if digest != KNOWN_MERMAID_SHA256:
+        raise SystemExit(
+            "來源 Mermaid 流程圖內容已變更，請先更新 template/vul_handle_n_disclose_flow.png "
+            "並同步 KNOWN_MERMAID_SHA256。"
+        )
+
+
+def trim_source_lines(lines: list[str]) -> list[str]:
+    for idx, line in enumerate(lines):
+        if SOURCE_START_RE.match(line.strip()):
+            return lines[idx:]
+    raise SystemExit(
+        "找不到正式內容起始標題。預期格式為 '## 1. 目的 Purpose' 或 '## 目的 Purpose'。"
+    )
+
+
+def strip_heading_number(text: str) -> str:
+    return re.sub(r"^(?:[1-9]\d?)(?:\.(?:[1-9]\d?))*\.?\s+", "", clean_inline(text)).strip()
+
+
+def write_missing_translation_report() -> None:
+    MISSING_TRANSLATION_REPORT.parent.mkdir(parents=True, exist_ok=True)
+    content = ["# Missing translations", ""]
+    content.extend(f"- {item}" for item in sorted(MISSING_TRANSLATIONS))
+    MISSING_TRANSLATION_REPORT.write_text("\n".join(content) + "\n", encoding="utf-8")
+
+
+def split_markdown_row(raw: str) -> list[str]:
+    cells = []
+    current = []
+    escaped = False
+    for ch in raw.strip().strip("|"):
+        if escaped:
+            current.append(ch)
+            escaped = False
+            continue
+        if ch == "\\":
+            escaped = True
+            continue
+        if ch == "|":
+            cells.append(clean_inline("".join(current).strip()))
+            current = []
+            continue
+        current.append(ch)
+    cells.append(clean_inline("".join(current).strip()))
+    return cells
+
+
 def translate_sentence(text: str) -> str:
     source = clean_inline(text)
+    if source in TRANSLATION_MEMORY:
+        return TRANSLATION_MEMORY[source]
     if source in EXACT_TRANSLATIONS:
         return EXACT_TRANSLATIONS[source]
     argos = translate_with_argos(source)
     if argos:
         return argos
-    parts = re.split(r"(?<=[。；;])", source)
-    out = []
-    for part in parts:
-        c = part.strip().rstrip("。；;")
-        if not c:
-            continue
-        if not has_cjk(c):
-            out.append(c)
-            continue
-        draft = c
-        for zh, en in sorted(TERM_MAP.items(), key=lambda kv: len(kv[0]), reverse=True):
-            draft = draft.replace(zh, en)
-        replacements = [
-            ("應", "shall "), ("若", "If "), ("不得", "shall not "),
-            ("至少", "at least "), ("包含但不限於", "include but are not limited to "),
-            ("包含", "include "), ("提供", "provide "), ("確認", "confirm "),
-            ("維護", "maintain "), ("建立", "establish "), ("記錄", "record "),
-            ("保存", "retain "), ("啟動", "initiate "), ("完成", "complete "),
-            ("判定", "determine "), ("適用", "apply "), ("產品", "product "),
-            ("客戶", "customer "), ("供應商", "supplier "), ("主管機關", "competent authority "),
-            ("公開", "public "), ("外部", "external "), ("內部", "internal "),
-            ("案件", "case "), ("證據", "evidence "), ("責任", "responsibility "),
-            ("時限", "deadline "), ("狀態", "status "), ("資訊", "information "),
-            ("要求", "requirements "), ("來源", "source "), ("版本", "version "),
-            ("系統", "system "), ("符合", "conform to "), ("協調", "coordinate "),
-            ("通知", "notify "), ("分析", "analyze "), ("修正", "correct "),
-        ]
-        for zh, en in replacements:
-            draft = draft.replace(zh, en)
-        draft = re.sub(r"\s+", " ", draft).strip()
-        out.append(f"[Draft translation] {draft}.")
-    return " ".join(out)
+    if has_cjk(source):
+        MISSING_TRANSLATIONS.add(source)
+        return ""
+    return source
 
 
 def translate_with_argos(text: str) -> str:
@@ -243,6 +376,8 @@ def translate(text: str) -> str:
     text = clean_inline(text)
     if not text:
         return ""
+    if text in TRANSLATION_MEMORY:
+        return TRANSLATION_MEMORY[text]
     if text in SECTION_TRANSLATIONS:
         return SECTION_TRANSLATIONS[text]
     if text in EXACT_TRANSLATIONS:
@@ -263,9 +398,46 @@ def remove_body_content(doc: "Document") -> None:
         body.remove(child)
 
 
-def add_para(doc: "Document", text: str, style: str = "Body") -> None:
+PARAGRAPH_FORMAT_ATTRS = (
+    "alignment",
+    "first_line_indent",
+    "keep_together",
+    "keep_with_next",
+    "left_indent",
+    "line_spacing",
+    "line_spacing_rule",
+    "page_break_before",
+    "right_indent",
+    "space_after",
+    "space_before",
+    "widow_control",
+)
+
+
+def resolve_paragraph_format_value(paragraph, attr: str):
+    value = getattr(paragraph.paragraph_format, attr)
+    if value is not None:
+        return value
+    style = paragraph.style
+    while style is not None:
+        value = getattr(style.paragraph_format, attr)
+        if value is not None:
+            return value
+        style = style.base_style
+    return None
+
+
+def sync_paragraph_format(source, target) -> None:
+    for attr in PARAGRAPH_FORMAT_ATTRS:
+        value = resolve_paragraph_format_value(source, attr)
+        if value is not None:
+            setattr(target.paragraph_format, attr, value)
+
+
+def add_para(doc: "Document", text: str, style: str = "Body"):
     p = doc.add_paragraph(style=style)
     p.add_run(text)
+    return p
 
 
 def english_style(zh_style: str) -> str:
@@ -279,17 +451,17 @@ def add_bilingual(doc: "Document", zh: str, zh_style: str, en_style: str | None 
     if not zh:
         return
     en = translate(zh)
-    add_para(doc, zh, zh_style)
+    zh_para = add_para(doc, zh, zh_style)
     if en and en != zh:
-        add_para(doc, en, en_style or english_style(zh_style))
+        en_para = add_para(doc, en, en_style or english_style(zh_style))
+        sync_paragraph_format(zh_para, en_para)
 
 
 def parse_markdown_table(lines: list[str], start: int) -> tuple[list[list[str]], int]:
     rows = []
     i = start
     while i < len(lines) and lines[i].strip().startswith("|"):
-        raw = lines[i].strip().strip("|")
-        cells = [clean_inline(c.strip()) for c in raw.split("|")]
+        cells = split_markdown_row(lines[i])
         if not all(re.fullmatch(r":?-{3,}:?", c.replace(" ", "")) for c in cells):
             rows.append(cells)
         i += 1
@@ -317,7 +489,8 @@ def add_table(doc: "Document", rows: list[list[str]]) -> None:
                 run.bold = True
             en = translate(text)
             if en and en != text:
-                cell.add_paragraph(en)
+                en_para = cell.add_paragraph(en)
+                sync_paragraph_format(p, en_para)
 
 
 def render_markdown(doc: "Document", lines: list[str]) -> None:
@@ -364,7 +537,7 @@ def render_markdown(doc: "Document", lines: list[str]) -> None:
         if m:
             level = len(m.group(1))
             style = "H1" if level <= 2 else "H2" if level == 3 else "H3"
-            add_bilingual(doc, m.group(2), style)
+            add_bilingual(doc, strip_heading_number(m.group(2)), style)
             i += 1
             continue
         m = re.match(r"^[-*]\s+(.+)$", line)
@@ -407,6 +580,9 @@ def main() -> None:
             print(message)
         raise SystemExit(1)
 
+    raw_lines = SOURCE_MD.read_text(encoding="utf-8").splitlines()
+    validate_source_lines(raw_lines)
+
     if args.dry_run:
         print(f"source={SOURCE_MD}")
         print(f"template={TEMPLATE}")
@@ -421,8 +597,16 @@ def main() -> None:
 
     doc = Document(str(TEMPLATE))
     remove_body_content(doc)
-    lines = SOURCE_MD.read_text(encoding="utf-8").splitlines()
+    global TRANSLATION_MEMORY
+    TRANSLATION_MEMORY = build_translation_memory()
+    lines = trim_source_lines(raw_lines)
     render_markdown(doc, lines)
+    if MISSING_TRANSLATIONS:
+        write_missing_translation_report()
+        raise SystemExit(
+            f"missing_translations={len(MISSING_TRANSLATIONS)}; "
+            f"report={MISSING_TRANSLATION_REPORT}"
+        )
     set_default_fonts(doc)
     doc.save(str(output))
     print(output)

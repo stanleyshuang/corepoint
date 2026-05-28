@@ -72,21 +72,34 @@
 
 負責建立與維護 `.venv/`，確認 `python-docx` 等依賴只安裝於專案 virtualenv，執行 dry-run、正式生成、OpenXML package 驗證與基準文件差異摘要。若因依賴、網路或權限造成腳本無法執行，應明確標示為建置環境問題，不應誤判為文件內容問題。
 
+### 3.6 Persona 導入與優化責任
+
+本 workflow 執行時應導入下列 persona 並套用其檢查重點：
+
+1. Context Engineer：確認來源起點、輸出邊界、golden baseline、驗收條件與錯誤處理是否明確。
+2. Bilingual Document Editor：確認新增或異動中文內容均有可接受英文對照；若缺翻譯，不得產生看似完成的 DOCX。
+3. DOCX OpenXML Builder：確認 Markdown heading、清單、表格、Mermaid 圖片、頁首頁尾與 section 轉換未失真。
+4. Python DOCX Build Engineer：確認 `.venv`、dry-run、fail-fast、輸出檔名避覆蓋、DOCX package 驗證與 ignored artifact 狀態。
+
 ## 4. 文件轉換原則
 
 1. 以 `template/樣本.docx` 作為新文件主體。
 2. 複製樣本文件後，保留頁首、頁尾、section、頁面設定、樣式定義與既有版面語氣。
 3. 清除樣本文件 body 中的既有文字、表格與附圖。
 4. 先辨識樣本中常用段落樣式，再將來源 Markdown 的章節、本文、清單與表格對應到適當樣式。
-5. 章節編號由來源 Markdown 結構推導；若需調整層級，應以文件可讀性與程序文件慣例為準。
+5. 來源 Markdown 的標題階層應保留，但標題文字中的前置數字章節編號應於 DOCX 輸出時移除。轉換規則為 `## <n>. xxxx` 輸出為 `## xxxx`，`### <n.n> xxxx` 輸出為 `### xxxx`；例如 `## 1. 目的 Purpose` 應輸出為 `目的 Purpose`，`### 2.1 適用性與風險式加嚴要求 Applicability and Risk-based Enhancements` 應輸出為 `適用性與風險式加嚴要求 Applicability and Risk-based Enhancements`。
 6. 表格形式應參考 `template/QP-30-01 事件處理程序 V1.0 0528.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
 7. 當來源 Markdown 出現流程圖區塊或程序總覽位置時，插入 `template/vul_handle_n_disclose_flow.png`。
 8. 依 `template/樣本.docx` 的雙語形式呈現：中文後緊接英文翻譯。
 9. 中文來源文字為主控內容，不因英文草稿翻譯而改寫政策含義。
 10. 不新增來源文件未明確支持的公司政策、責任承諾或法遵判定。
-11. 來源 Markdown 最上層文件標題與文件屬性區塊僅供文件控制與追溯使用；除非基準文件已有相同呈現，正式 DOCX body 應自 `1. 目的 Purpose` 開始，不應額外插入 `L2-01` 標題、文件屬性、適用標準、版本、修訂者或文件擁有者段落。
+11. 來源 Markdown 的文件控制區塊僅供追溯使用；轉換時應明確排除自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的所有內容。`## 1. 目的 Purpose` 本身必須保留，但輸出至正式 DOCX body 時應移除章節編號，起始段落為 `目的 Purpose`。
 12. 若來源 Markdown 的 Mermaid 區塊已由流程圖圖片取代，不應額外新增基準文件不存在的「流程圖 / Flow Chart」標題；圖片應插入於程序總覽章節中，並維持基準文件的圖片數量與位置邏輯。
 13. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用既有樣本 / 基準文件中的 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
+14. 英文段落的縮排、行距、段前段後、對齊與分行分頁設定，應比照其相對應中文段落；英文樣式可保留字型語系差異，但 paragraph formatting 不得與對應中文段落分岔。
+15. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
+16. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
+17. 若新增或修改中文內容導致找不到英文對照，流程應 fail-fast 並輸出待翻譯清單，不得產出缺英文段落的正式 DOCX。
 
 ## 5. 執行流程
 
@@ -98,6 +111,7 @@
 4. 檢查 `build/build_qp_docx.py` 的路徑設定是否與第 2 節一致，避免來源、樣本、圖片或輸出路徑錯置。
 5. 檢查 `.venv/` 是否存在；若不存在，使用 `python3 -m venv .venv` 建立。
 6. 使用 `.venv/bin/python -m pip show python-docx` 確認套件已安裝。若未安裝，應安裝於 `.venv/`，不得使用系統全域 Python 環境。
+7. dry-run 階段即應檢查來源正式內容起點與 Mermaid hash；若檢查失敗，不得進入正式生成。
 
 ### 5.2 樣本與參考文件分析
 
@@ -105,7 +119,7 @@
 2. 讀取表格參考文件，觀察表格欄位、框線、字體大小、對齊與程序文件常見表現形式。
 3. 讀取 `doc/QP-30-01 事件處理程序 V1.0.docx` 作為 golden baseline，記錄其起始段落、段落數、表格數、圖片數、頁首頁尾數與主要關鍵字分布。
 4. 判定來源 Markdown 中哪些內容應呈現為標題、本文、清單、表格、圖片或修訂紀錄。
-5. 明確排除來源 Markdown 首段文件控制資訊，使正式 DOCX body 與 golden baseline 一樣自 `1. 目的 Purpose` 開始。
+5. 明確排除來源 Markdown 中自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的文件控制資訊；正式 DOCX body 應自移除章節編號後的 `目的 Purpose` 開始。
 
 ### 5.3 內容審閱與結構化
 
@@ -123,16 +137,20 @@
 5. 優先沿用 `template/樣本.docx` 與 golden baseline 中既有中英對照作為 translation memory，以降低同一中文句子在不同產物中翻譯不一致的風險。
 6. 生成式翻譯應視為 draft，需由文件擁有者、法務或流程負責人審閱。
 7. 不得將 `[Draft translation]`、半中文半英文機械替換句或明顯不可讀英文寫入正式 DOCX；此類段落應標記為待人工翻譯與審閱。
+8. 每一個英文段落建立後，應同步其對應中文段落的 paragraph formatting，至少包含 left/right/first-line indent、line spacing、space before/after、alignment、keep lines together、keep with next、page break before 與 widow/orphan control。
+9. 若 translation memory、既有樣本或核准翻譯表無法提供英文對照，應輸出 missing translations report 並中止生成。
 
 ### 5.5 DOCX 建置
 
 1. 以 `template/樣本.docx` 複製建立目標文件。
 2. 移除 body 內容，保留 header、footer、style、section 與 package 結構。
 3. 寫入整理後的雙語內容。
-4. 套用樣本文件中對應的標題、本文與英文段落樣式。
-5. 寫入表格並參考指定 QP 參考文件的表格形式。
-6. 在程序總覽或來源流程圖位置插入流程圖圖片。
-7. 依第 2.1 節的輸出檔名衝突處理規則，儲存為指定輸出檔名或自動遞增後的安全輸出檔名。
+4. 套用樣本文件中對應的標題、本文與英文段落樣式；Markdown heading 輸出前應移除前置數字章節編號，但不得影響本文、清單、表格或法規條號中的數字。
+5. 英文段落可使用英文樣式以維持字型與語系呈現，但其縮排、行距、段前段後與分行分頁設定應由對應中文段落複製；表格儲存格中的英文段落亦同。
+6. 寫入表格並參考指定 QP 參考文件的表格形式。
+7. 在程序總覽或來源流程圖位置插入流程圖圖片。
+8. 依第 2.1 節的輸出檔名衝突處理規則，儲存為指定輸出檔名或自動遞增後的安全輸出檔名。
+9. Markdown 表格解析應支援 escaped pipe `\|`，避免技術字串造成欄位錯位。
 
 ### 5.6 驗證
 
@@ -142,15 +160,17 @@
 4. 確認中文與英文段落相鄰呈現。
 5. 確認流程圖圖片已插入在來源程序總覽位置。
 6. 抽查表格欄位與清單內容，確認未遺漏來源 Markdown 的關鍵程序要求。
-7. 與 golden baseline 比對下列指標：檔案雜湊、段落數、表格數、表格列數、表格儲存格數、圖片數、header/footer 數、起始段落、關鍵字分布與 target-only / generated-only 段落樣本。
-8. 若比對發現新檔多出來源 Markdown 文件屬性、`[Draft translation]`、額外流程圖標題或圖片位置差異，應先修正轉換規則再產生下一版。
-9. 標記仍需人工審閱的事項：英文翻譯、Word 視覺細節、法遵用語、管理核准與版本資訊。
+7. 抽查英文段落與對應中文段落的 paragraph formatting 是否一致，至少包含縮排、行距、段前段後、對齊與分行分頁設定。
+8. 與 golden baseline 比對下列指標：檔案雜湊、段落數、表格數、表格列數、表格儲存格數、圖片數、header/footer 數、起始段落、關鍵字分布與 target-only / generated-only 段落樣本。
+9. 若比對發現新檔多出來源 Markdown 開頭 `# L2-01...` 至 `## 1. 目的 Purpose` 前一行之間的內容、`[Draft translation]`、額外流程圖標題或圖片位置差異，應先修正轉換規則再產生下一版。
+10. 標記仍需人工審閱的事項：英文翻譯、Word 視覺細節、法遵用語、管理核准與版本資訊。
 
 ### 5.7 Dry-run 驗證
 
 1. 使用 `.venv/bin/python build/build_qp_docx.py --dry-run` 執行 dry-run，確認來源 Markdown、Word 樣本與流程圖圖片路徑均存在。
 2. 若 `doc/QP-30-01 事件處理程序 V1.0.docx` 已存在，dry-run 預期應回報 `resolved_output` 為加上當日日期後綴或日期加版號後綴的檔名。
-3. dry-run 應回報 `write=false`，且不得新增或覆蓋任何 DOCX。
+3. dry-run 應同時檢查來源正式內容起點與 Mermaid hash。
+4. dry-run 應回報 `write=false`，且不得新增或覆蓋任何 DOCX。
 
 ### 5.8 差異分析重點
 
@@ -158,7 +178,7 @@
 
 1. 確認 golden baseline 與表格參考文件是否仍為同一份內容；若兩者不同，應以文件擁有者指定者為準。
 2. 比對新產物與 golden baseline 的檔案雜湊、段落數、表格數、圖片數、header/footer 數與起始段落。
-3. 若新產物多出 Markdown 首段標題、文件屬性或版本資訊，代表文件控制區塊未被正確排除。
+3. 若新產物多出 Markdown 開頭 `# L2-01...` 至 `## 1. 目的 Purpose` 前一行之間的任何內容，代表文件控制區塊未被正確排除。
 4. 若新產物出現 `[Draft translation]`、半中文半英文機械替換句或明顯不可讀英文，代表 translation memory 或人工翻譯流程未完成。
 5. 若表格數、圖片數、header/footer 數一致，但段落數或文字內容差異大，應優先檢查 body 文字結構、翻譯與章節起點，而非頁首頁尾或圖片嵌入。
 
@@ -173,8 +193,10 @@
 - 表格以 Word 表格呈現，而非純文字。
 - 流程圖圖片已插入適當章節。
 - 文件呈現中英雙語，中文原文保留為控制文字。
-- DOCX body 應自 `1. 目的 Purpose` 開始，不得額外輸出來源 Markdown 文件控制區塊。
+- DOCX body 應自 `目的 Purpose` 開始，不得額外輸出來源 Markdown 中 `# L2-01...` 至 `## 1. 目的 Purpose` 前一行之間的文件控制區塊，且所有 Markdown heading 應移除前置數字章節編號。
 - 英文段落不得包含 `[Draft translation]` 或明顯機械替換文字。
+- 英文段落之縮排、行距、段前段後、對齊與分行分頁設定應與相對應中文段落一致。
+- 若來源起點、Mermaid hash 或英文翻譯完整性檢查失敗，生成流程應中止並回報原因。
 - DOCX package 結構有效，可由 Word 或相容工具開啟。
 - 若指定產出文件已存在，新產物應依 `_YYYYMMDD`、`_YYYYMMDD_v2`、`_YYYYMMDD_v3` 的順序自動改名，不得覆蓋既有檔案。
 
@@ -185,6 +207,7 @@
 3. 表格樣式可參考指定 QP 參考文件，但若樣本與參考文件樣式衝突，應由文件擁有者決定最終樣式。
 4. CRA、主管機關通報、CNA 能力規劃、ODM/OEM 權責與客戶通知義務涉及法務或管理判定，需另行審閱。
 5. 若來源 Markdown 後續新增 Mermaid、圖片、表格或特殊格式，生成腳本需同步調整解析規則。
+6. 新增中文內容若未同步提供英文翻譯，生成流程會中止並輸出待翻譯清單；此為避免缺英文段落的刻意設計。
 
 ## 8. 後續重複使用方式
 
