@@ -15,6 +15,7 @@
 | 工作目錄 | 專案根目錄 `corepoint/` | 是 |
 | 來源 Markdown | `doc/L2-01_vulnerability-handling-and-disclosure-process.md` | 是 |
 | Word 樣本 | `template/樣本.docx` | 是 |
+| 文件管制程序 | `template/文件管制程序2.7.doc` | 是；用於確認二階文件編號與文件編寫注意事項 |
 | 表格參考文件 | `template/QP-30-01 事件處理程序 V1.0 0528.docx` | 是 |
 | 比對基準文件 | `doc/QP-30-01 事件處理程序 V1.0.docx` | 若已存在，視為 golden baseline，不得覆蓋 |
 | 流程圖圖片 | `template/vul_handle_n_disclose_flow.png` | 視來源是否有流程圖 |
@@ -43,14 +44,15 @@
 1. `doc/L2-01_vulnerability-handling-and-disclosure-process.md` 是本次 Word 程序文件的主要內容來源。
 2. `doc/QP-30-01 事件處理程序 V1.0.docx` 是本次已命名的目標輸出文件。
 3. `template/樣本.docx` 是新文件應沿用頁首、頁尾、section、樣式與版面語氣的 Word 樣本。
-4. `template/QP-30-01 事件處理程序 V1.0 0528.docx` 位於 `template/`，本計畫將其視為表格與版面參考文件，不作為正式輸出路徑。
-5. `template/vul_handle_n_disclose_flow.png` 是來源 Markdown 中 Mermaid 程序總覽對應的流程圖圖片。
-6. `build/build_qp_docx.py` 是主要生成腳本；執行前應確認其路徑設定與本節所列檔案位置一致。
-7. `persona/python_docx_build_engineer.md` 是 Python 執行環境與 DOCX 建置驗證之專責 persona。
-8. `prompt/translation/glossary_psirt.json`、`prompt/translation/blacklist_english.json` 與 `prompt/translation/translation_memory_l2_01.json` 是英文品質控制來源，應納入版控並經人工審閱。
-9. `persona/translation_quality_reviewer.md` 是自動翻譯候選稿進入正式 translation memory 前的品質審查角色。
-10. `build/generate_translation_candidates.py` 僅能產生 draft candidate 至 `tmp/translation_candidates_l2_01.json`，不得直接修改正式 translation memory 或 DOCX。
-11. `build/review_translation_candidates.py` 僅能產生本地審查結果至 `tmp/translation_review_l2_01.json`，不得自動核准入庫。
+4. `template/文件管制程序2.7.doc` 是受控程序文件格式依據；其中 6.4.2 指向二階文件之 QP 編號結構，6.5 指向文件編寫注意事項，例如章節階層、版次遞增與參照格式。
+5. `template/QP-30-01 事件處理程序 V1.0 0528.docx` 位於 `template/`，本計畫將其視為表格與版面參考文件，不作為正式輸出路徑。
+6. `template/vul_handle_n_disclose_flow.png` 是來源 Markdown 中 Mermaid 程序總覽對應的流程圖圖片。
+7. `build/build_qp_docx.py` 是主要生成腳本；執行前應確認其路徑設定與本節所列檔案位置一致。
+8. `persona/python_docx_build_engineer.md` 是 Python 執行環境與 DOCX 建置驗證之專責 persona。
+9. `prompt/translation/glossary_psirt.json`、`prompt/translation/blacklist_english.json` 與 `prompt/translation/translation_memory_l2_01.json` 是英文品質控制來源，應納入版控並經人工審閱。
+10. `persona/translation_quality_reviewer.md` 是自動翻譯候選稿進入正式 translation memory 前的品質審查角色。
+11. `build/generate_translation_candidates.py` 僅能產生 draft candidate 至 `tmp/translation_candidates_l2_01.json`，不得直接修改正式 translation memory 或 DOCX。
+12. `build/review_translation_candidates.py` 僅能產生本地審查結果至 `tmp/translation_review_l2_01.json`，不得自動核准入庫。
 
 ### 2.3 既有基準文件狀態
 
@@ -94,28 +96,32 @@
 
 ## 4. 文件轉換原則
 
-1. 以 `template/樣本.docx` 作為新文件主體。
-2. 複製樣本文件後，保留頁首、頁尾、section、頁面設定、樣式定義與既有版面語氣。
-3. 清除樣本文件 body 中的既有文字、表格與附圖。
-4. 先辨識樣本中常用段落樣式，再將來源 Markdown 的章節、本文、清單與表格對應到適當樣式。
-5. 來源 Markdown 的標題階層應保留，但標題文字中的前置數字章節編號應於 DOCX 輸出時移除。轉換規則為 `## <n>. xxxx` 輸出為 `## xxxx`，`### <n.n> xxxx` 輸出為 `### xxxx`；例如 `## 1. 目的 Purpose` 應輸出為 `目的 Purpose`，`### 2.1 適用性與風險式加嚴要求 Applicability and Risk-based Enhancements` 應輸出為 `適用性與風險式加嚴要求 Applicability and Risk-based Enhancements`。此規則僅適用於 Markdown heading；若來源為未加 `#` 的本文編號清單，例如 `1. PSIRT 與 RD/DQV 應確認案件是否可重現...`，輸出至 MS Word 時必須保留 `1.`，不得削去清單編號。
-6. 來源 Markdown 的 bullet 清單應於中文段落反映 bullet 與縮排；若來源為縮排 bullet，例如 `   - 受影響 product family、型號、版本、平台與 BOM variant`，中文輸出應保留對應縮排並顯示 bullet。其英文翻譯段落應同步相同縮排，但不得顯示 bullet。
-7. 表格形式應參考 `template/QP-30-01 事件處理程序 V1.0 0528.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
-8. 當來源 Markdown 出現流程圖區塊或程序總覽位置時，插入 `template/vul_handle_n_disclose_flow.png`。
-9. 依 `template/樣本.docx` 的雙語形式呈現：中文後緊接英文翻譯。
-10. 中文來源文字為主控內容，不因英文草稿翻譯而改寫政策含義。
-11. 不新增來源文件未明確支持的公司政策、責任承諾或法遵判定。
-12. 來源 Markdown 的文件控制區塊僅供追溯使用；轉換時應明確排除自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的所有內容。`## 1. 目的 Purpose` 本身必須保留，但輸出至正式 DOCX body 時應移除章節編號，起始段落為 `目的 Purpose`。
-13. 若來源 Markdown 的 Mermaid 區塊已由流程圖圖片取代，不應額外新增基準文件不存在的「流程圖 / Flow Chart」標題；圖片應插入於程序總覽章節中，並維持基準文件的圖片數量與位置邏輯。
-14. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用既有樣本 / 基準文件中的 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
-15. 英文段落的縮排、行距、段前段後、對齊與分行分頁設定，應比照其相對應中文段落；英文樣式可保留字型語系差異，但 paragraph formatting 不得與對應中文段落分岔。
-16. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
-17. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
-18. 若新增或修改中文內容導致找不到英文對照，流程應 fail-fast 並輸出待翻譯清單，不得產出缺英文段落的正式 DOCX。
-19. 英文翻譯來源僅允許使用人工審核之 `prompt/translation/translation_memory_l2_01.json`、`prompt/translation/glossary_psirt.json` 與腳本內已審核固定字串；不得自既有產出 DOCX、模板 DOCX 或機器翻譯結果自動建立可信 translation memory。
-20. 英文輸出必須通過 `prompt/translation/blacklist_english.json` 品質 gate；若命中污染句、錯譯、錯字或禁止詞，流程應 fail-fast 並輸出 blocked English report。
-21. 可使用外部 LLM / API 產生 draft translation candidate，但候選稿只能輸出至 `tmp/translation_candidates_l2_01.json`；候選稿必須經 Translation Quality Reviewer 審查與人工確認後，才可手動納入 `prompt/translation/translation_memory_l2_01.json`。
-22. API key 應由環境變數提供，例如 `OPENAI_API_KEY`；不得寫入 repo、prompt、translation memory、candidate 或 review 檔。
+1. 以 `template/文件管制程序2.7.doc` 重新定義 MS Word 程序文件格式邏輯，並以 `template/樣本.docx` 作為可執行樣式來源。若兩者衝突，章節/文件管制規則以文件管制程序為準，字型、字級、頁首、頁尾、section 與段落樣式以樣本.docx 為準。
+2. 文件編號與層級應符合文件管制程序 6.4.2 二階文件邏輯：二階程序文件採 QP 類型，文件名稱與輸出檔名維持 `QP-30-01 事件處理程序 V1.0` 這類受控文件命名，不得輸出為 L2 Markdown 原始標題。
+3. 文件編寫應符合文件管制程序 6.5 注意事項：章節階層採 `1`、`1.1`、`1.1.1` 之邏輯；版次以 `1.0`、`1.1` 至 `1.9`、`2.0` 遞增；附件與表單參照須維持 `[7.X]`、`[7.X.X]` 或文件既有參照格式。
+4. 複製樣本文件後，保留頁首、頁尾、section、頁面設定、樣式定義與既有版面語氣。
+5. 樣本.docx 的有效字級是強制規格：`Normal` 為 12pt，`H1`、`H2`、`H3`、`H4`、`H5`、`List Paragraph`、`Body`、`Body EN` 與 `H2_EN`/`H3_EN`/`H4_EN`/`H5_EN` 均應維持或繼承 12pt；不得回退為 10.5pt。
+6. 英文樣式名稱須使用樣本實際樣式：`Body EN`、`H2_EN`、`H3_EN`、`H4_EN`、`H5_EN`。若腳本內部使用 alias，輸出前必須解析為樣本內存在的樣式。
+7. 清除樣本文件 body 中的既有文字、表格與附圖。
+8. 先辨識樣本中常用段落樣式，再將來源 Markdown 的章節、本文、清單與表格對應到適當樣式。
+9. 來源 Markdown 的標題階層應保留，但標題文字中的前置數字章節編號應於 DOCX 輸出時移除。轉換規則為 `## <n>. xxxx` 輸出為 `## xxxx`，`### <n.n> xxxx` 輸出為 `### xxxx`；例如 `## 1. 目的 Purpose` 應輸出為 `目的 Purpose`，`### 2.1 適用性與風險式加嚴要求 Applicability and Risk-based Enhancements` 應輸出為 `適用性與風險式加嚴要求 Applicability and Risk-based Enhancements`。此規則僅適用於 Markdown heading；若來源為未加 `#` 的本文編號清單，例如 `1. PSIRT 與 RD/DQV 應確認案件是否可重現...`，輸出至 MS Word 時必須保留 `1.`，不得削去清單編號。
+10. 來源 Markdown 的 bullet 清單應於中文段落反映 bullet 與縮排；若來源為縮排 bullet，例如 `   - 受影響 product family、型號、版本、平台與 BOM variant`，中文輸出應保留對應縮排並顯示 bullet。其英文翻譯段落應同步相同縮排，但不得顯示 bullet。
+11. 表格形式應參考 `template/QP-30-01 事件處理程序 V1.0 0528.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
+12. 當來源 Markdown 出現流程圖區塊或程序總覽位置時，插入 `template/vul_handle_n_disclose_flow.png`。
+13. 依 `template/樣本.docx` 的雙語形式呈現：中文後緊接英文翻譯。
+14. 中文來源文字為主控內容，不因英文草稿翻譯而改寫政策含義。
+15. 不新增來源文件未明確支持的公司政策、責任承諾或法遵判定。
+16. 來源 Markdown 的文件控制區塊僅供追溯使用；轉換時應明確排除自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的所有內容。`## 1. 目的 Purpose` 本身必須保留，但輸出至正式 DOCX body 時應移除章節編號，起始段落為 `目的 Purpose`。
+17. 若來源 Markdown 的 Mermaid 區塊已由流程圖圖片取代，不應額外新增基準文件不存在的「流程圖 / Flow Chart」標題；圖片應插入於程序總覽章節中，並維持基準文件的圖片數量與位置邏輯。
+18. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用既有樣本 / 基準文件中的 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
+19. 英文段落的縮排、行距、段前段後、對齊與分行分頁設定，應比照其相對應中文段落；英文樣式可保留字型語系差異，但 paragraph formatting 不得與對應中文段落分岔。
+20. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
+21. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
+22. 若新增或修改中文內容導致找不到英文對照，流程應 fail-fast 並輸出待翻譯清單，不得產出缺英文段落的正式 DOCX。
+23. 英文翻譯來源僅允許使用人工審核之 `prompt/translation/translation_memory_l2_01.json`、`prompt/translation/glossary_psirt.json` 與腳本內已審核固定字串；不得自既有產出 DOCX、模板 DOCX 或機器翻譯結果自動建立可信 translation memory。
+24. 英文輸出必須通過 `prompt/translation/blacklist_english.json` 品質 gate；若命中污染句、錯譯、錯字或禁止詞，流程應 fail-fast 並輸出 blocked English report。
+25. 可使用外部 LLM / API 產生 draft translation candidate，但候選稿只能輸出至 `tmp/translation_candidates_l2_01.json`；候選稿必須經 Translation Quality Reviewer 審查與人工確認後，才可手動納入 `prompt/translation/translation_memory_l2_01.json`。
+26. API key 應由環境變數提供，例如 `OPENAI_API_KEY`；不得寫入 repo、prompt、translation memory、candidate 或 review 檔。
 
 ## 5. 執行流程
 
@@ -132,11 +138,12 @@
 
 ### 5.2 樣本與參考文件分析
 
-1. 讀取 `template/樣本.docx`，記錄頁首、頁尾、section、字型、段落樣式與常見章節編排。
-2. 讀取表格參考文件，觀察表格欄位、框線、字體大小、對齊與程序文件常見表現形式。
-3. 讀取 `doc/QP-30-01 事件處理程序 V1.0.docx` 作為 golden baseline，記錄其起始段落、段落數、表格數、圖片數、頁首頁尾數與主要關鍵字分布。
-4. 判定來源 Markdown 中哪些內容應呈現為標題、本文、清單、表格、圖片或修訂紀錄。
-5. 明確排除來源 Markdown 中自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的文件控制資訊；正式 DOCX body 應自移除章節編號後的 `目的 Purpose` 開始。
+1. 讀取 `template/文件管制程序2.7.doc`，確認 6.4.2 二階文件採 QP 編號邏輯，以及 6.5 對章節層級、版次與參照格式的要求；若 `.doc` 無法由目前環境完整解析，應至少確認檔案存在並將 6.4.2/6.5 視為人工覆核項目。
+2. 讀取 `template/樣本.docx`，記錄頁首、頁尾、section、字型、段落樣式與常見章節編排；需確認 `Normal`、`H1`、`H2`、`H3`、`H4`、`H5`、`List Paragraph`、`Body`、`Body EN` 與 `H*_EN` 樣式有效字級均為 12pt。
+3. 讀取表格參考文件，觀察表格欄位、框線、字體大小、對齊與程序文件常見表現形式。
+4. 讀取 `doc/QP-30-01 事件處理程序 V1.0.docx` 作為 golden baseline，記錄其起始段落、段落數、表格數、圖片數、頁首頁尾數與主要關鍵字分布。
+5. 判定來源 Markdown 中哪些內容應呈現為標題、本文、清單、表格、圖片或修訂紀錄。
+6. 明確排除來源 Markdown 中自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的文件控制資訊；正式 DOCX body 應自移除章節編號後的 `目的 Purpose` 開始。
 
 ### 5.3 內容審閱與結構化
 

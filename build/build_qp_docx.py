@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 BASE = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE.parent
 TEMPLATE = PROJECT_ROOT / "template" / "樣本.docx"
+DOCUMENT_CONTROL_TEMPLATE = PROJECT_ROOT / "template" / "文件管制程序2.7.doc"
 SOURCE_MD = PROJECT_ROOT / "doc" / "L2-01_vulnerability-handling-and-disclosure-process.md"
 FLOW_IMAGE = PROJECT_ROOT / "template" / "vul_handle_n_disclose_flow.png"
 OUTPUT = PROJECT_ROOT / "doc" / "QP-30-01 事件處理程序 V1.0.docx"
@@ -57,6 +58,7 @@ def validate_inputs() -> list[str]:
     missing = []
     for label, path in (
         ("Word 樣本", TEMPLATE),
+        ("文件管制程序", DOCUMENT_CONTROL_TEMPLATE),
         ("來源 Markdown", SOURCE_MD),
         ("流程圖圖片", FLOW_IMAGE),
         ("術語表", GLOSSARY),
@@ -450,6 +452,72 @@ def remove_body_content(doc: "Document") -> None:
         body.remove(child)
 
 
+REQUIRED_SAMPLE_STYLES = (
+    "Normal",
+    "List Paragraph",
+    "H1",
+    "H2",
+    "H2_EN",
+    "H3",
+    "H3_EN",
+    "H4",
+    "H4_EN",
+    "H5",
+    "H5_EN",
+    "Body",
+    "Body EN",
+)
+
+STYLE_ALIASES = {
+    "BodyEN": "Body EN",
+    "H1EN": "Body EN",
+    "H2EN": "H2_EN",
+    "H3EN": "H3_EN",
+    "H4EN": "H4_EN",
+    "H5EN": "H5_EN",
+    "af": "List Paragraph",
+}
+
+
+def require_sample_styles(doc: "Document") -> None:
+    missing = []
+    for style_name in REQUIRED_SAMPLE_STYLES:
+        try:
+            doc.styles[style_name]
+        except KeyError:
+            missing.append(style_name)
+    if missing:
+        raise SystemExit("樣本.docx 缺少必要樣式: " + ", ".join(missing))
+
+    wrong_sizes = []
+    for style_name in REQUIRED_SAMPLE_STYLES:
+        style = doc.styles[style_name]
+        size = effective_style_font_size(style)
+        if size is None or round(size.pt, 2) != 12:
+            wrong_sizes.append(f"{style_name}={size.pt if size else 'unset'}")
+    if wrong_sizes:
+        raise SystemExit("樣本.docx 必要樣式有效字級必須為 12pt: " + ", ".join(wrong_sizes))
+
+
+def effective_style_font_size(style):
+    current = style
+    while current is not None:
+        size = current.font.size
+        if size is not None:
+            return size
+        current = current.base_style
+    return None
+
+
+def resolve_style_name(doc: "Document", style_name: str) -> str:
+    candidate = STYLE_ALIASES.get(style_name, style_name)
+    try:
+        doc.styles[candidate]
+        return candidate
+    except KeyError:
+        return "Normal"
+
+
 PARAGRAPH_FORMAT_ATTRS = (
     "alignment",
     "first_line_indent",
@@ -496,14 +564,16 @@ def apply_markdown_indent(paragraph, indent_spaces: int) -> None:
 
 
 def add_para(doc: "Document", text: str, style: str = "Body"):
-    p = doc.add_paragraph(style=style)
+    p = doc.add_paragraph(style=resolve_style_name(doc, style))
     p.add_run(text)
     return p
 
 
 def english_style(zh_style: str) -> str:
-    if zh_style in {"H1", "H2", "H3", "H4", "H5", "Body"}:
-        return f"{zh_style}EN"
+    if zh_style in {"H2", "H3", "H4", "H5"}:
+        return f"{zh_style}_EN"
+    if zh_style in {"H1", "Body"}:
+        return "Body EN"
     return "BodyEN"
 
 
@@ -535,7 +605,7 @@ def add_bullet_bilingual(doc: "Document", zh: str, indent_spaces: int) -> None:
     if not zh:
         return
     en = translate(zh)
-    zh_para = add_para(doc, f"• {zh}", "af")
+    zh_para = add_para(doc, f"• {zh}", "List Paragraph")
     apply_markdown_indent(zh_para, indent_spaces)
     if en and en != zh:
         en_para = add_para(doc, en, "BodyEN")
@@ -569,12 +639,14 @@ def add_table(doc: "Document", rows: list[list[str]]) -> None:
             cell = cells[cidx]
             cell.text = ""
             p = cell.paragraphs[0]
+            p.style = resolve_style_name(doc, "Body")
             run = p.add_run(text)
             if ridx == 0:
                 run.bold = True
             en = translate(text)
             if en and en != text:
                 en_para = cell.add_paragraph(en)
+                en_para.style = resolve_style_name(doc, "Body EN")
                 sync_paragraph_format(p, en_para)
 
 
@@ -599,8 +671,6 @@ def render_markdown(doc: "Document", lines: list[str]) -> None:
                 code_buf = []
             else:
                 if code_lang == "mermaid" and FLOW_IMAGE.exists():
-                    add_para(doc, "流程圖", "H2")
-                    add_para(doc, "Flow Chart", "H2EN")
                     doc.add_picture(str(FLOW_IMAGE), width=Inches(6.3))
                 else:
                     add_para(doc, "\n".join(code_buf), "HTML")
@@ -649,7 +719,14 @@ def set_default_fonts(doc: "Document") -> None:
     for p in doc.paragraphs:
         for run in p.runs:
             if run.font.size is None:
-                run.font.size = Pt(10.5)
+                run.font.size = Pt(12)
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        if run.font.size is None:
+                            run.font.size = Pt(12)
 
 
 def main() -> None:
@@ -681,9 +758,15 @@ def main() -> None:
             f"report={BLOCKED_ENGLISH_REPORT}"
         )
 
+    from docx import Document
+
+    template_doc = Document(str(TEMPLATE))
+    require_sample_styles(template_doc)
+
     if args.dry_run:
         print(f"source={SOURCE_MD}")
         print(f"template={TEMPLATE}")
+        print(f"document_control_template={DOCUMENT_CONTROL_TEMPLATE}")
         print(f"flow_image={FLOW_IMAGE}")
         print(f"requested_output={OUTPUT}")
         print(f"resolved_output={output}")
@@ -691,9 +774,7 @@ def main() -> None:
         print("write=false")
         return
 
-    from docx import Document
-
-    doc = Document(str(TEMPLATE))
+    doc = template_doc
     remove_body_content(doc)
     lines = trim_source_lines(raw_lines)
     render_markdown(doc, lines)

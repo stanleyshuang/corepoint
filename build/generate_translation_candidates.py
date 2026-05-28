@@ -17,6 +17,11 @@ BLACKLIST = PROJECT_ROOT / "prompt" / "translation" / "blacklist_english.json"
 OUTPUT = PROJECT_ROOT / "tmp" / "translation_candidates_l2_01.json"
 DEFAULT_MODEL = "gpt-5.2"
 API_URL = "https://api.openai.com/v1/responses"
+DOCUMENT_FORMAT_CONTEXT = (
+    "The target MS Word output is a controlled Level 2/QP procedure. "
+    "Keep translations concise enough for 12 pt H1/H2/body/list styles and do not add "
+    "extra headings, numbering, bullets, or explanatory text that is not present in the source."
+)
 
 
 def load_json(path: Path) -> dict:
@@ -89,6 +94,7 @@ def request_payload(model: str, sources: list[str], glossary: dict, blacklist: d
         [
             "You are drafting English translations for an IEI PSIRT procedure.",
             "Chinese is the authoritative source. Preserve legal and procedural meaning exactly.",
+            DOCUMENT_FORMAT_CONTEXT,
             "Return JSON only according to the schema.",
             "Each output status must be draft and review_required must be true.",
             glossary_prompt(glossary),
