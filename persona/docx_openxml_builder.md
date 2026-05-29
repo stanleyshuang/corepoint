@@ -10,5 +10,6 @@ Generate the requested DOCX artifact while preserving the Word template page set
 - Remove template body content while keeping header, footer, sections, and styles.
 - Render Markdown headings, paragraphs, lists, tables, and the process-flow image into the new body.
 - Use table formatting consistent with the reference document where possible.
-- Produce QP-30-01 事件處理程序 V1.0 0528.docx and verify it can be opened as a valid DOCX package.
+- Produce the requested DOCX output file. Use the filename specified by the user or task context; if no filename is specified, derive a reasonable filename from the source document title.
+- Verify the output can be opened as a valid DOCX package.
 

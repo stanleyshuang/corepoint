@@ -6,18 +6,20 @@
 
 本計畫可重複套用於後續版本或其他 Level 2 / QP 類程序文件；每次執行時僅需替換「輸入參數」中的檔案、版本、日期與輸出名稱。
 
-## 2. 本次輸入參數
+## 2. 輸入參數
 
 本計畫以專案根目錄 `corepoint/` 為路徑基準，檔案依用途分置於 `doc/`、`template/`、`build/`、`persona/` 與 `prompt/workflow/`。
 
-| 項目 | 本次設定 | 可重複使用時需確認 |
+下列路徑為 L2-01 / QP-30-01 文件產製的預設值或範例設定。重複使用於其他文件時，應於執行前確認或替換。
+
+| 項目 | 預設值 / 範例設定 | 重複使用時需確認 |
 |---|---|---|
 | 工作目錄 | 專案根目錄 `corepoint/` | 是 |
 | 來源 Markdown | `doc/L2-01_vulnerability-handling-and-disclosure-process.md` | 是 |
 | Word 樣本 | `template/樣本.docx` | 是 |
 | 文件管制程序 | `template/文件管制程序2.7.doc` | 是；用於確認二階文件編號與文件編寫注意事項 |
-| 表格參考文件 | `template/QP-30-01 事件處理程序 V1.0 0528.docx` | 是 |
-| 比對基準文件 | `doc/QP-30-01 事件處理程序 V1.0.docx` | 若已存在，視為 golden baseline，不得覆蓋 |
+| 表格參考文件 | `template/樣本二.docx` | 是 |
+| 比對基準文件 | `doc/QP-30-01 事件處理程序 V1.0.docx` | 若指定且已存在，視為 golden baseline，不得覆蓋 |
 | 流程圖圖片 | `template/vul_handle_n_disclose_flow.png` | 視來源是否有流程圖 |
 | 產出文件 | `doc/QP-30-01 事件處理程序 V1.0.docx`；若已存在則依第 2.1 節改名 | 是 |
 | 主要生成腳本 | `build/build_qp_docx.py` | 視實作方式調整 |
@@ -39,13 +41,13 @@
 3. 版號應從 `v2` 開始遞增，直到找到不存在的檔名為止。
 4. dry-run 時應只顯示原始輸出路徑、實際將使用的輸出路徑與是否會寫檔，不得建立或覆蓋任何 DOCX。
 
-### 2.2 當前檔案關聯
+### 2.2 檔案角色與關聯
 
-1. `doc/L2-01_vulnerability-handling-and-disclosure-process.md` 是本次 Word 程序文件的主要內容來源。
-2. `doc/QP-30-01 事件處理程序 V1.0.docx` 是本次已命名的目標輸出文件。
+1. 來源 Markdown 是 Word 程序文件的主要內容來源；預設範例為 `doc/L2-01_vulnerability-handling-and-disclosure-process.md`。
+2. 產出文件路徑由執行參數指定；預設範例為 `doc/QP-30-01 事件處理程序 V1.0.docx`。
 3. `template/樣本.docx` 是新文件應沿用頁首、頁尾、section、樣式與版面語氣的 Word 樣本。
 4. `template/文件管制程序2.7.doc` 是受控程序文件格式依據；其中 6.4.2 指向二階文件之 QP 編號結構，6.5 指向文件編寫注意事項，例如章節階層、版次遞增與參照格式。
-5. `template/QP-30-01 事件處理程序 V1.0 0528.docx` 位於 `template/`，本計畫將其視為表格與版面參考文件，不作為正式輸出路徑。
+5. `template/樣本二.docx` 位於 `template/`，本計畫將其視為表格與版面參考文件，不作為正式輸出路徑。
 6. `template/vul_handle_n_disclose_flow.png` 是來源 Markdown 中 Mermaid 程序總覽對應的流程圖圖片。
 7. `build/build_qp_docx.py` 是主要生成腳本；執行前應確認其路徑設定與本節所列檔案位置一致。
 8. `persona/python_docx_build_engineer.md` 是 Python 執行環境與 DOCX 建置驗證之專責 persona。
@@ -54,13 +56,12 @@
 11. `build/generate_translation_candidates.py` 僅能產生 draft candidate 至 `tmp/translation_candidates_l2_01.json`，不得直接修改正式 translation memory 或 DOCX。
 12. `build/review_translation_candidates.py` 僅能產生本地審查結果至 `tmp/translation_review_l2_01.json`，不得自動核准入庫。
 
-### 2.3 既有基準文件狀態
+### 2.3 既有基準文件處理
 
-1. 若 `doc/QP-30-01 事件處理程序 V1.0.docx` 已存在，該檔不得被視為可覆蓋輸出，而應作為本次生成結果的比對基準。
-2. 目前 `doc/QP-30-01 事件處理程序 V1.0.docx` 與 `template/QP-30-01 事件處理程序 V1.0 0528.docx` 內容雜湊相同；因此本次可將兩者視為同一份 golden baseline。
-3. 新生成檔應使用安全改名後的輸出路徑，例如 `doc/QP-30-01 事件處理程序 V1.0_YYYYMMDD.docx`，再與 golden baseline 比對。
-4. 比對結論應區分內容差異、翻譯差異、表格差異、圖片差異、頁首頁尾 / section 差異與腳本或環境問題。
-5. golden baseline 與既有產出 DOCX 不得作為可信英文翻譯來源；若其中英文品質未經人工審核，僅可作為版面與結構比對參考。
+1. 若指定產出文件已存在，該檔不得被視為可覆蓋輸出，而應作為新生成結果的 golden baseline。
+2. 新生成檔應使用安全改名後的輸出路徑，例如 `doc/QP-30-01 事件處理程序 V1.0_YYYYMMDD.docx`，再與 golden baseline 比對。
+3. 比對結論應區分內容差異、翻譯差異、表格差異、圖片差異、頁首頁尾 / section 差異與腳本或環境問題。
+4. golden baseline 與既有產出 DOCX 不得作為可信英文翻譯來源；若其中英文品質未經人工審核，僅可作為版面與結構比對參考。
 
 ## 3. 參與 Persona 與分工
 
@@ -108,14 +109,14 @@
 10. 若來源為未加 `#` 的本文編號清單，例如 `1. IEI 應維持至少一個公開單一聯絡窗口...`，中文輸出至 MS Word 時必須保留 `1.`，不得削去清單編號；但其英文翻譯段落不得再輸出數字編號，應輸出為 `IEI shall maintain at least one public single point of contact...`，不得輸出為 `1. IEI shall maintain...`。
 11. 若來源為數字起始的清單式標題或小節項目，例如 `1. 產品識別能力`，中文輸出應保留 `1.`；其英文翻譯應移除前置數字，輸出為 `Product identification capability`，不得輸出為 `1. Product identification capability`。
 12. 來源 Markdown 的 bullet 清單應於中文段落反映 bullet 與縮排；若來源為縮排 bullet，例如 `   - 受影響 product family、型號、版本、平台與 BOM variant`，中文輸出應保留對應縮排並顯示 bullet。其英文翻譯段落應同步相同縮排，但不得顯示 bullet。
-13. 表格形式應參考 `template/QP-30-01 事件處理程序 V1.0 0528.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
+13. 表格形式應參考 `template/樣本二.docx`，但最終字型與段落樣式仍以 `template/樣本.docx` 為準。
 14. 當來源 Markdown 出現流程圖區塊或程序總覽位置時，插入 `template/vul_handle_n_disclose_flow.png`。
 15. 依 `template/樣本.docx` 的雙語形式呈現：中文後緊接英文翻譯。
 16. 中文來源文字為主控內容，不因英文草稿翻譯而改寫政策含義。
 17. 不新增來源文件未明確支持的公司政策、責任承諾或法遵判定。
 18. 來源 Markdown 的文件控制區塊僅供追溯使用；轉換時應明確排除自 `# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process` 起，至 `## 1. 目的 Purpose` 前一行為止的所有內容。`## 1. 目的 Purpose` 本身必須保留，但輸出至正式 DOCX body 時應移除章節編號，起始段落為 `目的 Purpose`。
 19. 若來源 Markdown 的 Mermaid 區塊已由流程圖圖片取代，不應額外新增基準文件不存在的「流程圖 / Flow Chart」標題；圖片應插入於程序總覽章節中，並維持基準文件的圖片數量與位置邏輯。
-20. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用既有樣本 / 基準文件中的 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
+20. 英文段落不得輸出 `[Draft translation]` 佔位字樣。若無法取得合格翻譯，應使用已人工審核之 translation memory，或將該段列入人工審閱清單，不得把機械替換文字寫入正式 DOCX。
 21. 英文段落的縮排、行距、段前段後、對齊與分行分頁設定，應比照其相對應中文段落；英文樣式可保留字型語系差異，但 paragraph formatting 不得與對應中文段落分岔。
 22. 來源正式內容起點應以可容忍章節號有無的方式辨識，例如 `## 1. 目的 Purpose` 或 `## 目的 Purpose`；若找不到起點，流程必須 fail-fast，不得回退為轉換整份 Markdown。
 23. 若來源 Mermaid 區塊內容變更，應先更新對應 PNG 圖片並同步紀錄 Mermaid 來源 hash；不得在來源流程已變更時沿用舊流程圖。
@@ -150,7 +151,7 @@
 
 ### 5.2 樣本與參考文件分析
 
-1. 讀取 `template/文件管制程序2.7.doc`，確認 6.4.2 二階文件採 QP 編號邏輯，以及 6.5 對章節層級、版次與參照格式的要求；若 `.doc` 無法由目前環境完整解析，應至少確認檔案存在並將 6.4.2/6.5 視為人工覆核項目。
+1. 讀取 `template/文件管制程序2.7.doc`，確認 6.4.2 二階文件採 QP 編號邏輯，以及 6.5 對章節層級、版次與參照格式的要求；若 `.doc` 無法由執行環境完整解析，應至少確認檔案存在並將 6.4.2/6.5 視為人工覆核項目。
 2. 讀取 `template/樣本.docx`，記錄頁首、頁尾、section、字型、段落樣式與常見章節編排；需確認 `Normal`、`H1`、`H2`、`H3`、`H4`、`H5`、`List Paragraph`、`Body`、`Body EN` 與 `H*_EN` 樣式有效字級均為 12pt。
 3. 讀取表格參考文件，觀察表格欄位、框線、字體大小、對齊與程序文件常見表現形式。
 4. 讀取 `doc/QP-30-01 事件處理程序 V1.0.docx` 作為 golden baseline，記錄其起始段落、段落數、表格數、圖片數、頁首頁尾數與主要關鍵字分布。
@@ -221,7 +222,7 @@
 ### 5.7 Dry-run 驗證
 
 1. 使用 `.venv/bin/python build/build_qp_docx.py --dry-run` 執行 dry-run，確認來源 Markdown、Word 樣本、流程圖圖片、glossary、blacklist 與 translation memory 路徑均存在。
-2. 若 `doc/QP-30-01 事件處理程序 V1.0.docx` 已存在，dry-run 預期應回報 `resolved_output` 為加上當日日期後綴或日期加版號後綴的檔名。
+2. 若指定產出文件已存在，dry-run 預期應回報 `resolved_output` 為加上當日日期後綴或日期加版號後綴的檔名。
 3. dry-run 應同時檢查來源正式內容起點、Mermaid hash、translation memory 格式、blacklist、文件管制程序範本存在性、樣本必要樣式存在性與樣式有效字級 12pt。
 4. dry-run 應回報 `write=false`，且不得新增或覆蓋任何 DOCX。
 5. dry-run 若偵測到樣式缺漏、必要樣式有效字級不是 12pt、英文樣式名稱無法解析、文件管制程序範本不存在或輸出路徑會覆蓋既有檔案，應 fail-fast，不得進入正式生成。
@@ -230,7 +231,7 @@
 
 每次產出安全改名後的 DOCX，均應與 golden baseline 比對並特別注意：
 
-1. 確認 golden baseline 與表格參考文件是否仍為同一份內容；若兩者不同，應以文件擁有者指定者為準。
+1. 若需比較 golden baseline 與表格參考文件，應於執行時重新計算檔案雜湊並記錄結果；不得預設兩者內容相同。
 2. 比對新產物與 golden baseline 的檔案雜湊、段落數、表格數、圖片數、header/footer 數與起始段落。
 3. 若新產物多出 Markdown 開頭 `# L2-01...` 至 `## 1. 目的 Purpose` 前一行之間的任何內容，代表文件控制區塊未被正確排除。
 4. 若新產物出現 `[Draft translation]`、半中文半英文機械替換句或明顯不可讀英文，代表 translation memory 或人工翻譯流程未完成。
@@ -240,10 +241,10 @@
 
 產出可視為完成初版建置時，需符合下列條件：
 
-- 產出文件為 `doc/QP-30-01 事件處理程序 V1.0.docx`。
-- 若 `doc/QP-30-01 事件處理程序 V1.0.docx` 已存在，實際產出應安全改名，並以既有檔作為 golden baseline 進行差異分析。
+- 產出文件應使用執行參數指定之輸出路徑；預設範例為 `doc/QP-30-01 事件處理程序 V1.0.docx`。
+- 若指定產出文件已存在，實際產出應安全改名，並以既有檔作為 golden baseline 進行差異分析。
 - 文件以 `template/樣本.docx` 為基礎，頁首與頁尾未被移除。
-- `doc/L2-01_vulnerability-handling-and-disclosure-process.md` 主要內容已轉入 Word 文件。
+- 指定來源 Markdown 的主要內容已轉入 Word 文件。
 - 表格以 Word 表格呈現，而非純文字。
 - 流程圖圖片已插入適當章節。
 - 文件呈現中英雙語，中文原文保留為控制文字。
