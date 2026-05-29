@@ -63,6 +63,37 @@
 3. 比對結論應區分內容差異、翻譯差異、表格差異、圖片差異、頁首頁尾 / section 差異與腳本或環境問題。
 4. golden baseline 與既有產出 DOCX 不得作為可信英文翻譯來源；若其中英文品質未經人工審核，僅可作為版面與結構比對參考。
 
+### 2.4 生成腳本 CLI 參數
+
+`build/build_qp_docx.py` 應以 CLI 參數接收可替換輸入，避免為不同文件修改腳本內路徑常數。相對路徑應以 `--project-root` 為基準解析。
+
+常用參數如下：
+
+- `--source`：來源 Markdown。
+- `--template`：Word 樣本 DOCX。
+- `--document-control-template`：文件管制程序。
+- `--flow-image`：流程圖或附圖。
+- `--output`：指定輸出 DOCX。
+- `--translation-dir`：translation memory、glossary 與 blacklist 所在目錄。
+- `--glossary`、`--blacklist`、`--translation-memory`：個別英文品質控制檔案。
+- `--source-start-pattern`：正式內容起點的 Markdown heading regex。
+- `--known-mermaid-sha256`：來源 Mermaid 區塊預期雜湊。
+- `--missing-translation-report`、`--blocked-english-report`：檢查報告輸出位置。
+- `--date-suffix`：輸出檔名衝突時使用的日期後綴。
+- `--dry-run`：只驗證輸入、解析路徑與顯示輸出規劃，不寫入 DOCX。
+
+範例：
+
+```bash
+.venv/bin/python build/build_qp_docx.py \
+  --source doc/L2-01_vulnerability-handling-and-disclosure-process.md \
+  --template template/樣本.docx \
+  --document-control-template template/文件管制程序2.7.doc \
+  --flow-image template/vul_handle_n_disclose_flow.png \
+  --output "doc/QP-30-01 事件處理程序 V1.0.docx" \
+  --dry-run
+```
+
 ## 3. 參與 Persona 與分工
 
 ### 3.1 Context Engineer
@@ -130,7 +161,7 @@
 
 1. 所有由 L2 / QP 類 Markdown 產生之正式或候選 DOCX，均應透過本 workflow 與 `build/` 下之生成腳本執行；不得以手工另存、臨時腳本、未驗證轉檔工具或直接複製既有 DOCX 的方式繞過本流程。
 2. `prompt/workflow/markdown_convert_msword.md` 是 MS Word 轉換規格的唯一流程入口；其他 plan 或 prompt 若提出 L2 內容修改，只能引用本 workflow，不應另行定義或覆蓋 Word 樣式、頁首頁尾、section、字級、Mermaid 圖片或輸出命名規則。
-3. `build/build_qp_docx.py` 應在 dry-run 與正式生成階段檢查 `template/文件管制程序2.7.doc`、`template/樣本.docx`、流程圖圖片、translation memory、glossary 與 blacklist 均存在且可用。
+3. `build/build_qp_docx.py` 應在 dry-run 與正式生成階段檢查 CLI 參數指定之文件管制程序、Word 樣本、來源 Markdown、流程圖圖片、translation memory、glossary 與 blacklist 均存在且可用。
 4. `build/build_qp_docx.py` 應驗證 `template/樣本.docx` 內必要樣式存在，且 `Normal`、`H1`、`H2`、`H3`、`H4`、`H5`、`List Paragraph`、`Body`、`Body EN` 與 `H2_EN`/`H3_EN`/`H4_EN`/`H5_EN` 有效字級均為 12pt；若不符合，流程應 fail-fast。
 5. `build/build_qp_docx.py` 應使用樣本實際樣式名稱，至少包含 `Body EN`、`H2_EN`、`H3_EN`、`H4_EN`、`H5_EN`；若腳本內部使用 alias，輸出前必須解析為樣本內存在的樣式，避免回退為 `Normal` 或其他非預期格式。
 6. Mermaid 圖片替代規則必須由本 workflow 與 build script 控制；若來源 Mermaid 已由 `template/vul_handle_n_disclose_flow.png` 取代，不得額外新增「流程圖 / Flow Chart」標題。
@@ -143,7 +174,7 @@
 1. 以專案根目錄為基準，檢查 `doc/`、`template/`、`build/`、`persona/` 與 `prompt/workflow/` 下的來源文件、樣本文件、參考文件、圖片、persona 與生成腳本是否存在。
 2. 確認 `prompt/workflow/markdown_convert_msword.md` 或相關執行 prompt 中的輸入參數與實際檔名一致。
 3. 確認來源 Markdown 是否包含章節、表格、流程圖區塊與修訂紀錄。
-4. 檢查 `build/build_qp_docx.py` 的路徑設定是否與第 2 節一致，避免來源、樣本、圖片或輸出路徑錯置。
+4. 檢查 `build/build_qp_docx.py` dry-run 回報的解析後路徑是否與第 2 節輸入參數一致，避免來源、樣本、圖片或輸出路徑錯置。
 5. 檢查 `.venv/` 是否存在；若不存在，使用 `python3 -m venv .venv` 建立。
 6. 使用 `.venv/bin/python -m pip show python-docx` 確認套件已安裝。若未安裝，應安裝於 `.venv/`，不得使用系統全域 Python 環境。
 7. 確認 `prompt/translation/` 下的 glossary、blacklist 與 translation memory JSON 均存在且可解析。
@@ -221,7 +252,7 @@
 
 ### 5.7 Dry-run 驗證
 
-1. 使用 `.venv/bin/python build/build_qp_docx.py --dry-run` 執行 dry-run，確認來源 Markdown、Word 樣本、流程圖圖片、glossary、blacklist 與 translation memory 路徑均存在。
+1. 使用 `.venv/bin/python build/build_qp_docx.py --dry-run` 或第 2.4 節所列 CLI 參數執行 dry-run，確認來源 Markdown、Word 樣本、流程圖圖片、glossary、blacklist 與 translation memory 路徑均存在。
 2. 若指定產出文件已存在，dry-run 預期應回報 `resolved_output` 為加上當日日期後綴或日期加版號後綴的檔名。
 3. dry-run 應同時檢查來源正式內容起點、Mermaid hash、translation memory 格式、blacklist、文件管制程序範本存在性、樣本必要樣式存在性與樣式有效字級 12pt。
 4. dry-run 應回報 `write=false`，且不得新增或覆蓋任何 DOCX。
@@ -279,6 +310,6 @@
 5. 輸出 DOCX 檔名、版本與日期。
 6. 需要啟用的 persona。
 7. 驗收標準與人工審閱清單。
-8. 生成腳本中的路徑常數或命令列參數。
+8. 生成腳本 CLI 參數。
 
 更新後，依本計畫第 5 節流程重新執行即可。

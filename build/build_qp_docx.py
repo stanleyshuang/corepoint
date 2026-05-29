@@ -14,23 +14,31 @@ if TYPE_CHECKING:
 
 BASE = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE.parent
-TEMPLATE = PROJECT_ROOT / "template" / "樣本.docx"
-DOCUMENT_CONTROL_TEMPLATE = PROJECT_ROOT / "template" / "文件管制程序2.7.doc"
-SOURCE_MD = PROJECT_ROOT / "doc" / "L2-01_vulnerability-handling-and-disclosure-process.md"
-FLOW_IMAGE = PROJECT_ROOT / "template" / "vul_handle_n_disclose_flow.png"
-OUTPUT = PROJECT_ROOT / "doc" / "QP-30-01 事件處理程序 V1.0.docx"
-TRANSLATION_DIR = PROJECT_ROOT / "prompt" / "translation"
+DEFAULT_TEMPLATE = Path("template") / "樣本.docx"
+DEFAULT_DOCUMENT_CONTROL_TEMPLATE = Path("template") / "文件管制程序2.7.doc"
+DEFAULT_SOURCE_MD = Path("doc") / "L2-01_vulnerability-handling-and-disclosure-process.md"
+DEFAULT_FLOW_IMAGE = Path("template") / "vul_handle_n_disclose_flow.png"
+DEFAULT_OUTPUT = Path("doc") / "QP-30-01 事件處理程序 V1.0.docx"
+DEFAULT_TRANSLATION_DIR = Path("prompt") / "translation"
+DEFAULT_MISSING_TRANSLATION_REPORT = Path("tmp") / "missing_translations.txt"
+DEFAULT_BLOCKED_ENGLISH_REPORT = Path("tmp") / "blocked_english.txt"
+TEMPLATE = PROJECT_ROOT / DEFAULT_TEMPLATE
+DOCUMENT_CONTROL_TEMPLATE = PROJECT_ROOT / DEFAULT_DOCUMENT_CONTROL_TEMPLATE
+SOURCE_MD = PROJECT_ROOT / DEFAULT_SOURCE_MD
+FLOW_IMAGE = PROJECT_ROOT / DEFAULT_FLOW_IMAGE
+OUTPUT = PROJECT_ROOT / DEFAULT_OUTPUT
+TRANSLATION_DIR = PROJECT_ROOT / DEFAULT_TRANSLATION_DIR
 GLOSSARY = TRANSLATION_DIR / "glossary_psirt.json"
 BLACKLIST = TRANSLATION_DIR / "blacklist_english.json"
 TRANSLATION_MEMORY_FILE = TRANSLATION_DIR / "translation_memory_l2_01.json"
 FENCE = chr(96) * 3
 ARGOS_READY: bool | None = None
-SOURCE_START_HEADING = "## 1. 目的 Purpose"
-SOURCE_START_RE = re.compile(r"^##\s+(?:\d+\.\s+)?目的\s+Purpose\s*$")
-SOURCE_CONTROL_HEADING = "# L2-01：弱點處理與揭露程序 Vulnerability Handling and Disclosure Process"
-KNOWN_MERMAID_SHA256 = "cf06288f248d0a26ba8b71655d84ed9d9e6f947ba8d7787b1e71bf52a901cf27"
-MISSING_TRANSLATION_REPORT = PROJECT_ROOT / "tmp" / "missing_translations.txt"
-BLOCKED_ENGLISH_REPORT = PROJECT_ROOT / "tmp" / "blocked_english.txt"
+DEFAULT_SOURCE_START_PATTERN = r"^##\s+(?:\d+\.\s+)?目的\s+Purpose\s*$"
+DEFAULT_KNOWN_MERMAID_SHA256 = "cf06288f248d0a26ba8b71655d84ed9d9e6f947ba8d7787b1e71bf52a901cf27"
+SOURCE_START_RE = re.compile(DEFAULT_SOURCE_START_PATTERN)
+KNOWN_MERMAID_SHA256 = DEFAULT_KNOWN_MERMAID_SHA256
+MISSING_TRANSLATION_REPORT = PROJECT_ROOT / DEFAULT_MISSING_TRANSLATION_REPORT
+BLOCKED_ENGLISH_REPORT = PROJECT_ROOT / DEFAULT_BLOCKED_ENGLISH_REPORT
 TRANSLATION_MEMORY: dict[str, str] = {}
 BLOCKED_PHRASES: list[dict[str, str]] = []
 MISSING_TRANSLATIONS: set[str] = set()
@@ -54,13 +62,67 @@ def resolve_output_path(path: Path, date_suffix: str | None = None) -> Path:
         version += 1
 
 
+def path_arg(value: str | None, default: Path, project_root: Path) -> Path:
+    candidate = Path(value) if value else default
+    if candidate.is_absolute():
+        return candidate
+    return project_root / candidate
+
+
+def configure_paths(args: argparse.Namespace) -> None:
+    global PROJECT_ROOT
+    global TEMPLATE
+    global DOCUMENT_CONTROL_TEMPLATE
+    global SOURCE_MD
+    global FLOW_IMAGE
+    global OUTPUT
+    global TRANSLATION_DIR
+    global GLOSSARY
+    global BLACKLIST
+    global TRANSLATION_MEMORY_FILE
+    global MISSING_TRANSLATION_REPORT
+    global BLOCKED_ENGLISH_REPORT
+    global SOURCE_START_RE
+    global KNOWN_MERMAID_SHA256
+
+    PROJECT_ROOT = Path(args.project_root).resolve()
+    TRANSLATION_DIR = path_arg(args.translation_dir, DEFAULT_TRANSLATION_DIR, PROJECT_ROOT)
+    TEMPLATE = path_arg(args.template, DEFAULT_TEMPLATE, PROJECT_ROOT)
+    DOCUMENT_CONTROL_TEMPLATE = path_arg(
+        args.document_control_template,
+        DEFAULT_DOCUMENT_CONTROL_TEMPLATE,
+        PROJECT_ROOT,
+    )
+    SOURCE_MD = path_arg(args.source, DEFAULT_SOURCE_MD, PROJECT_ROOT)
+    FLOW_IMAGE = path_arg(args.flow_image, DEFAULT_FLOW_IMAGE, PROJECT_ROOT)
+    OUTPUT = path_arg(args.output, DEFAULT_OUTPUT, PROJECT_ROOT)
+    GLOSSARY = path_arg(args.glossary, TRANSLATION_DIR / "glossary_psirt.json", PROJECT_ROOT)
+    BLACKLIST = path_arg(args.blacklist, TRANSLATION_DIR / "blacklist_english.json", PROJECT_ROOT)
+    TRANSLATION_MEMORY_FILE = path_arg(
+        args.translation_memory,
+        TRANSLATION_DIR / "translation_memory_l2_01.json",
+        PROJECT_ROOT,
+    )
+    MISSING_TRANSLATION_REPORT = path_arg(
+        args.missing_translation_report,
+        DEFAULT_MISSING_TRANSLATION_REPORT,
+        PROJECT_ROOT,
+    )
+    BLOCKED_ENGLISH_REPORT = path_arg(
+        args.blocked_english_report,
+        DEFAULT_BLOCKED_ENGLISH_REPORT,
+        PROJECT_ROOT,
+    )
+    SOURCE_START_RE = re.compile(args.source_start_pattern)
+    KNOWN_MERMAID_SHA256 = args.known_mermaid_sha256
+
+
 def validate_inputs() -> list[str]:
     missing = []
     for label, path in (
         ("Word 樣本", TEMPLATE),
         ("文件管制程序", DOCUMENT_CONTROL_TEMPLATE),
         ("來源 Markdown", SOURCE_MD),
-        ("流程圖圖片", FLOW_IMAGE),
         ("術語表", GLOSSARY),
         ("英文黑名單", BLACKLIST),
         ("人工翻譯記憶庫", TRANSLATION_MEMORY_FILE),
@@ -344,7 +406,7 @@ def mermaid_blocks(lines: list[str]) -> list[str]:
 def validate_source_lines(lines: list[str]) -> None:
     if not any(SOURCE_START_RE.match(line.strip()) for line in lines):
         raise SystemExit(
-            "找不到正式內容起始標題。預期格式為 '## 1. 目的 Purpose' 或 '## 目的 Purpose'。"
+            f"找不到正式內容起始標題。使用的 source_start_pattern 為: {SOURCE_START_RE.pattern}"
         )
 
     blocks = mermaid_blocks(lines)
@@ -356,7 +418,7 @@ def validate_source_lines(lines: list[str]) -> None:
     digest = hashlib.sha256(blocks[0].encode("utf-8")).hexdigest()
     if digest != KNOWN_MERMAID_SHA256:
         raise SystemExit(
-            "來源 Mermaid 流程圖內容已變更，請先更新 template/vul_handle_n_disclose_flow.png "
+            f"來源 Mermaid 流程圖內容已變更，請先更新 {FLOW_IMAGE} "
             "並同步 KNOWN_MERMAID_SHA256。"
         )
 
@@ -366,7 +428,7 @@ def trim_source_lines(lines: list[str]) -> list[str]:
         if SOURCE_START_RE.match(line.strip()):
             return lines[idx:]
     raise SystemExit(
-        "找不到正式內容起始標題。預期格式為 '## 1. 目的 Purpose' 或 '## 目的 Purpose'。"
+        f"找不到正式內容起始標題。使用的 source_start_pattern 為: {SOURCE_START_RE.pattern}"
     )
 
 
@@ -733,10 +795,48 @@ def main() -> None:
     global TRANSLATION_MEMORY
     global BLOCKED_PHRASES
 
-    parser = argparse.ArgumentParser(description="Build QP DOCX from the L2 Markdown source.")
+    parser = argparse.ArgumentParser(description="Build a QP DOCX from a Markdown source.")
+    parser.add_argument("--project-root", default=str(PROJECT_ROOT), help="Project root used to resolve relative paths.")
+    parser.add_argument("--source", help=f"Source Markdown path. Default: {DEFAULT_SOURCE_MD}")
+    parser.add_argument("--template", help=f"Word template DOCX path. Default: {DEFAULT_TEMPLATE}")
+    parser.add_argument(
+        "--document-control-template",
+        help=f"Document control procedure path. Default: {DEFAULT_DOCUMENT_CONTROL_TEMPLATE}",
+    )
+    parser.add_argument("--flow-image", help=f"Process-flow image path. Default: {DEFAULT_FLOW_IMAGE}")
+    parser.add_argument("--output", help=f"Requested output DOCX path. Default: {DEFAULT_OUTPUT}")
+    parser.add_argument("--translation-dir", help=f"Translation assets directory. Default: {DEFAULT_TRANSLATION_DIR}")
+    parser.add_argument("--glossary", help="Glossary JSON path. Default: <translation-dir>/glossary_psirt.json")
+    parser.add_argument("--blacklist", help="English blacklist JSON path. Default: <translation-dir>/blacklist_english.json")
+    parser.add_argument(
+        "--translation-memory",
+        help="Translation memory JSON path. Default: <translation-dir>/translation_memory_l2_01.json",
+    )
+    parser.add_argument(
+        "--missing-translation-report",
+        help=f"Missing translation report path. Default: {DEFAULT_MISSING_TRANSLATION_REPORT}",
+    )
+    parser.add_argument(
+        "--blocked-english-report",
+        help=f"Blocked English report path. Default: {DEFAULT_BLOCKED_ENGLISH_REPORT}",
+    )
+    parser.add_argument(
+        "--source-start-pattern",
+        default=DEFAULT_SOURCE_START_PATTERN,
+        help="Regex used to find the first formal Markdown heading.",
+    )
+    parser.add_argument(
+        "--known-mermaid-sha256",
+        default=DEFAULT_KNOWN_MERMAID_SHA256,
+        help="Expected SHA-256 digest for the source Mermaid block.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Show resolved paths without writing the DOCX.")
     parser.add_argument("--date-suffix", help="Override the YYYYMMDD suffix used when the output exists.")
     args = parser.parse_args()
+    try:
+        configure_paths(args)
+    except re.error as exc:
+        parser.error(f"invalid --source-start-pattern: {exc}")
 
     output = resolve_output_path(OUTPUT, args.date_suffix)
     missing = validate_inputs()
@@ -746,6 +846,9 @@ def main() -> None:
         raise SystemExit(1)
 
     raw_lines = SOURCE_MD.read_text(encoding="utf-8").splitlines()
+    if mermaid_blocks(raw_lines) and not FLOW_IMAGE.exists():
+        print(f"流程圖圖片不存在: {FLOW_IMAGE}")
+        raise SystemExit(1)
     validate_source_lines(raw_lines)
     BLOCKED_PHRASES = load_blocked_phrases()
     TRANSLATION_MEMORY = load_translation_memory()
@@ -764,10 +867,19 @@ def main() -> None:
     require_sample_styles(template_doc)
 
     if args.dry_run:
+        print(f"project_root={PROJECT_ROOT}")
         print(f"source={SOURCE_MD}")
         print(f"template={TEMPLATE}")
         print(f"document_control_template={DOCUMENT_CONTROL_TEMPLATE}")
         print(f"flow_image={FLOW_IMAGE}")
+        print(f"translation_dir={TRANSLATION_DIR}")
+        print(f"glossary={GLOSSARY}")
+        print(f"blacklist={BLACKLIST}")
+        print(f"translation_memory={TRANSLATION_MEMORY_FILE}")
+        print(f"missing_translation_report={MISSING_TRANSLATION_REPORT}")
+        print(f"blocked_english_report={BLOCKED_ENGLISH_REPORT}")
+        print(f"source_start_pattern={SOURCE_START_RE.pattern}")
+        print(f"known_mermaid_sha256={KNOWN_MERMAID_SHA256}")
         print(f"requested_output={OUTPUT}")
         print(f"resolved_output={output}")
         print(f"output_exists={OUTPUT.exists()}")
@@ -792,6 +904,7 @@ def main() -> None:
             "; ".join(details)
         )
     set_default_fonts(doc)
+    output.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(output))
     print(output)
 
