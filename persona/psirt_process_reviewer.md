@@ -17,8 +17,12 @@
 >
 > **在 corepoint 內怎麼用：** 那是 hanuman **專案層**的 subagent，在 corepoint 開的
 > session 裡叫不到它。要用時讀取該檔內容，當作角色定義寫進 prompt 即可——corepoint 的
-> `persona/` 本來就是「prompting 時使用的角色定義」。若日後希望兩個 repo 都能直接派工，
-> 應將該定義提升到使用者層 `~/.claude/agents/`，而不是在此複製一份。
+> `persona/` 本來就是「prompting 時使用的角色定義」。
+>
+> **不要為了讓兩個 repo 都能直接派工而把它移到使用者層 `~/.claude/agents/`。**
+> 那個位置**不進版控**，換一台機器就沒了，團隊也看不到——與 `.git/hooks` 不進版控是
+> 同一個問題。agent 定義一律留在 repo 的 `.claude/agents/`，跟著 clone 走。
+> 也不要在此複製一份，那就回到本檔改成指標樁所要解決的漂移。
 >
 > **審查 L2-01 時的重要前提：** 權威來源是本 repo 的
 > `doc/L2-01_vulnerability-handling-and-disclosure-process.md`（§1–§8 完整程序），
